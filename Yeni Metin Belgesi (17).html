@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darkapet - Evcil Hayvan Ürünleri</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: #334155;
+      --accent: #f59e0b;
+      --accent-hover: #d97706;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --info: #3b82f6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: var(--bg-primary); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+    .container { max-width: 800px; margin: auto; padding: 20px; width: 100%; flex: 1; }
+
+    header { background: var(--bg-secondary); padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    header .logo { font-size: 1.8em; font-weight: bold; color: var(--accent); letter-spacing: 0.5px; cursor: pointer; }
+    header .logo span { color: var(--text-main); }
+    
+    nav { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+    nav a { color: var(--text-muted); text-decoration: none; font-size: 0.9em; font-weight: 500; position: relative; transition: color 0.2s; cursor: pointer; }
+    nav a:hover { color: var(--accent); }
+    
+    .badge { background: var(--accent); color: var(--bg-primary); padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75em; }
+    .notification-badge { background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7em; position: absolute; top: -8px; right: -12px; display: none; }
+
+    .card { background: var(--bg-secondary); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); }
+    .card h2, .card h3 { color: var(--accent); margin-bottom: 15px; }
+
+    button, .btn { background: var(--accent); color: var(--bg-primary); border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; font-size: 1em; transition: background 0.2s, transform 0.1s; }
+    button:hover { background: var(--accent-hover); }
+    button:active { transform: scale(0.98); }
+    button.secondary { background: var(--bg-card); color: var(--text-main); }
+    button.secondary:hover { background: #475569; }
+    button.danger { background: var(--danger); color: white; }
+    button.danger:hover { background: #dc2626; }
+    button.info { background: var(--info); color: white; }
+    button.info:hover { background: #2563eb; }
+    button.success { background: var(--success); color: white; }
+    button.success:hover { background: #16a34a; }
+
+    input, select, textarea { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: var(--bg-primary); color: var(--text-main); margin: 8px 0; font-size: 1em; outline: none; transition: border-color 0.2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+    .password-container { position: relative; display: flex; align-items: center; }
+    .password-container input { margin: 8px 0; padding-right: 45px; }
+    .toggle-password { position: absolute; right: 12px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2em; padding: 0; width: auto; margin: 0; }
+    .toggle-password:hover { color: var(--accent); }
+
+    .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; flex-wrap: wrap; }
+    .admin-tab-btn { background: var(--bg-card); color: var(--text-muted); border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.95em; width: auto; margin: 0; transition: background 0.2s, color 0.2s; }
+    .admin-tab-btn.active { background: var(--accent); color: var(--bg-primary); }
+    .admin-tab-btn:hover:not(.active) { background: #475569; color: var(--text-main); }
+
+    .order-subtabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+    .order-subtab-btn { background: var(--bg-primary); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85em; width: auto; margin: 0; transition: all 0.2s; }
+    .order-subtab-btn.active { background: var(--accent); color: var(--bg-primary); border-color: var(--accent); }
+    .order-subtab-btn:hover:not(.active) { background: var(--bg-card); color: var(--text-main); }
+
+    .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-top: 20px; }
+    .category-card { background: var(--bg-card); border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid rgba(255,255,255,0.05); }
+    .category-card:hover { transform: translateY(-3px); background: #475569; border-color: var(--accent); }
+    .category-card span { font-size: 2em; display: block; margin-bottom: 8px; }
+    .category-card h4 { color: var(--text-main); font-size: 0.95em; }
+
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .product-card { background: var(--bg-secondary); border-radius: 14px; padding: 15px; text-align: center; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: space-between; }
+    .product-img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: var(--bg-primary); }
+    .product-card h4 { margin: 12px 0 5px 0; color: var(--text-main); font-size: 1.1em; }
+    .product-card .price { color: var(--accent); font-weight: bold; font-size: 1.1em; margin-bottom: 5px; }
+    .product-card .stock { color: var(--text-muted); font-size: 0.85em; margin-bottom: 10px; }
+
+    .sepet-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .hidden { display: none !important; }
+
+    footer { text-align: center; margin-top: auto; padding: 20px; color: var(--text-muted); font-size: 0.85em; border-top: 1px solid rgba(255,255,255,0.05); }
+
+    .admin-table-wrapper { overflow-x: auto; }
+    .admin-table { width: 100%; background: var(--bg-primary); border-collapse: collapse; margin-top: 15px; border-radius: 10px; overflow: hidden; }
+    .admin-table th, .admin-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: left; font-size: 0.9em; vertical-align: middle; }
+    .admin-table th { background: var(--bg-card); color: var(--accent); }
+    .stock-low { color: var(--danger); font-weight: bold; }
+
+    .image-preview { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: var(--bg-primary); margin: 10px 0; display: none; }
+    .upload-buttons { display: flex; gap: 10px; }
+    .upload-buttons button { flex: 1; }
+
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: var(--bg-secondary); padding: 25px; border-radius: 16px; text-align: center; max-width: 320px; width: 100%; border: 1px solid rgba(255,255,255,0.1); }
+    .modal-content img { width: 180px; height: 180px; background: white; padding: 10px; border-radius: 10px; margin: 15px 0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo" onclick="showPage('home')">Darka<span>pet</span></div>
+    <nav>
+      <a onclick="showPage('home')">Ana Sayfa</a>
+      <a onclick="showPage('products')">Ürünler</a>
+      <a onclick="showPage('cart')">Sepet <span id="cart-count" class="badge">0</span></a>
+      <a id="my-orders-link" class="hidden" onclick="showPage('my-orders')">Siparişlerim</a>
+      <a id="user-link" onclick="showPage('login')">Giriş</a>
+      <a id="admin-link" onclick="showPage('admin-login')" style="color:var(--accent); position:relative;">
+        ⚙️
+        <span id="notification-badge" class="notification-badge">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Ana Sayfa -->
+    <div id="home-page">
+      <div class="card" style="text-align: center; padding: 30px 20px;">
+        <h2 style="font-size: 1.8em; margin-bottom: 10px;">🐶 Sevimli Dostlarınız İçin En İyisi 🐱</h2>
+        <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 1em;">Darkapet kaliteli ürünleri kapınıza getirir. Kapıda nakit veya POS ile güvenli ödeme imkanı.</p>
+        
+        <h3 style="text-align: left; font-size: 1.1em; color: var(--text-main); margin-top: 15px;">Kategoriler</h3>
+        <div class="categories-grid">
+          <div class="category-card" onclick="filterByCategory('Mama')">
+            <span>🍖</span>
+            <h4>Mama</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Kum')">
+            <span>🏖️</span>
+            <h4>Kum</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Aksesuar')">
+            <span>🎾</span>
+            <h4>Aksesuar</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Bakım')">
+            <span>🧴</span>
+            <h4>Bakım</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ürünler -->
+    <div id="products-page" class="hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 id="products-title" style="margin: 0;">Tüm Ürünler</h2>
+        <button class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
+      </div>
+      <div class="product-grid" id="product-container"></div>
+    </div>
+
+    <!-- Sepet -->
+    <div id="cart-page" class="hidden">
+      <h2>Sepetim</h2>
+      <div class="card">
+        <div id="cart-items"></div>
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 1.2em;"><strong>Toplam: <span id="cart-total" style="color: var(--accent);">0</span> TL</strong></p>
+        </div>
+        <button onclick="showPage('checkout')" id="checkout-btn" disabled style="margin-top: 20px;">Siparişi Tamamla</button>
+        <p id="empty-cart-msg" style="text-align: center; color: var(--text-muted); padding: 20px;">Sepetiniz henüz boş.</p>
+      </div>
+    </div>
+
+    <!-- Müşteri Siparişlerim -->
+    <div id="my-orders-page" class="hidden">
+      <div class="card">
+        <h2>📦 Geçmiş Siparişlerim</h2>
+        <div id="my-orders-container">
+          <p id="no-my-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Henüz verdiğiniz bir sipariş bulunmuyor.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="my-orders-table">
+              <thead><tr><th>Sipariş Kodu</th><th>Tarih</th><th>Tutar</th><th>Durum</th><th>Ödeme</th><th>Ürünler</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kullanıcı Profili -->
+    <div id="profile-page" class="hidden">
+      <div class="card">
+        <h2>👤 Kullanıcı Profili</h2>
+        <div style="margin-bottom: 20px; line-height: 1.6;">
+          <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
+          <p><strong>E-posta:</strong> <span id="profile-email"></span></p>
+          <p><strong>Telefon:</strong> <span id="profile-phone"></span></p>
+          <p><strong>Adres:</strong> <span id="profile-address"></span></p>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 20px 0;">
+
+        <h3>Şifre Değiştir</h3>
+        <div class="password-container">
+          <input type="password" id="old-password" placeholder="Mevcut Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('old-password', this)">👁️</button>
+        </div>
+        <div class="password-container">
+          <input type="password" id="new-password" placeholder="Yeni Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('new-password', this)">👁️</button>
+        </div>
+        <button onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
+
+        <button class="danger" onclick="logout()">Çıkış Yap</button>
+      </div>
+    </div>
+
+    <!-- Üye Giriş / Kayıt -->
+    <div id="login-page" class="hidden">
+      <div class="card" id="login-form">
+        <h2>Üye Girişi</h2>
+        <input type="email" id="login-email" placeholder="E-posta adresi">
+        <div class="password-container">
+          <input type="password" id="login-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('login-password', this)">👁️</button>
+        </div>
+        <button onclick="login()">Giriş Yap</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Hesabınız yok mu? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Üye Ol</a></p>
+      </div>
+      
+      <div class="card hidden" id="register-form">
+        <h2>Yeni Üyelik</h2>
+        <input type="text" id="reg-name" placeholder="Ad Soyad">
+        <input type="email" id="reg-email" placeholder="E-posta adresi">
+        <input type="tel" id="reg-phone" placeholder="Telefon Numarası (05XX XXX XX XX)">
+        <div class="password-container">
+          <input type="password" id="reg-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('reg-password', this)">👁️</button>
+        </div>
+        <button onclick="getLocation()" class="secondary">📍 Konumumu Otomatik Al</button>
+        <input type="text" id="reg-location" placeholder="Enlem, Boylam" readonly>
+        <textarea id="reg-address" placeholder="Açık adresiniz (Teslimat için zorunlu)"></textarea>
+        <button onclick="register()">Kayıt Ol</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Zaten üye misiniz? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Giriş Yap</a></p>
+      </div>
+    </div>
+
+    <!-- Sipariş Onay -->
+    <div id="checkout-page" class="hidden">
+      <div class="card">
+        <h2>Sipariş Onayı</h2>
+        <div id="address-select" style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 15px; line-height: 1.6;"></div>
+        <label style="color: var(--text-muted);">Ödeme Yöntemi Seçin:</label>
+        <select id="payment-method">
+          <option value="cash">Kapıda Nakit Ödeme</option>
+          <option value="pos">Kapıda POS Cihazı ile Ödeme</option>
+        </select>
+        <button onclick="placeOrder()" style="margin-top: 20px;">Siparişi Onayla</button>
+        <button class="secondary" onclick="showPage('cart')">Sepete Geri Dön</button>
+      </div>
+    </div>
+
+    <!-- Sipariş Başarılı -->
+    <div id="order-success-page" class="hidden">
+      <div class="card" style="text-align: center; padding: 40px 20px;">
+        <h2 style="color: var(--success); font-size: 2em; margin-bottom: 15px;">🎉 Siparişiniz Alındı!</h2>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Siparişiniz başarıyla kaydedildi. "Siparişlerim" menüsünden durumunu takip edebilirsiniz.</p>
+        <button onclick="showPage('home')" style="max-width: 250px; margin: auto;">Ana Sayfaya Dön</button>
+      </div>
+    </div>
+
+    <!-- Admin Giriş -->
+    <div id="admin-login-page" class="hidden">
+      <div class="card" style="max-width: 400px; margin: auto;">
+        <h2>Yönetici Girişi</h2>
+        <input type="text" id="admin-username" placeholder="Kullanıcı adı">
+        <div class="password-container">
+          <input type="password" id="admin-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
+        </div>
+        <button onclick="adminLogin()">Panele Git</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted); font-size: 0.85em;">Varsayılan: admin / 123456</p>
+      </div>
+    </div>
+
+    <!-- Admin Paneli -->
+    <div id="admin-page" class="hidden">
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" onclick="switchAdminTab('products')">📦 Ürün Yönetimi</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('orders')">🛎️ Gelen Siparişler</button>
+      </div>
+
+      <!-- Ürün Yönetimi Sekmesi -->
+      <div id="admin-tab-products" class="card">
+        <h2>📦 Ürün Yönetimi</h2>
+        <button onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
+        
+        <div id="add-product-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
+          <h3 id="form-title">Yeni Ürün Ekle</h3>
+          <input type="text" id="prod-name" placeholder="Ürün adı">
+          <select id="prod-category">
+            <option value="Mama">Mama</option>
+            <option value="Kum">Kum</option>
+            <option value="Aksesuar">Aksesuar</option>
+            <option value="Bakım">Bakım</option>
+          </select>
+          <input type="number" id="prod-price" placeholder="Fiyat (TL)">
+          <input type="number" id="prod-stock" placeholder="Stok adedi">
+          
+          <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Ürün Görseli:</label>
+          <div class="upload-buttons" style="margin-top: 5px;">
+            <button type="button" class="secondary" onclick="document.getElementById('file-input').click()">📁 Galeriden Seç</button>
+            <button type="button" class="secondary" onclick="openCamera()">📷 Kamera</button>
+          </div>
+          <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+          <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFileSelect(event)">
+          <img id="image-preview" class="image-preview" alt="Önizleme">
+          <input type="hidden" id="prod-image-data" value="">
+          
+          <button onclick="saveProduct()">💾 Kaydet</button>
+          <button class="secondary" onclick="cancelAddProduct()">İptal</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-product-table">
+            <thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Kayıtlı Kullanıcılar Sekmesi -->
+      <div id="admin-tab-users" class="card hidden">
+        <h2>👥 Kayıtlı Kullanıcılar</h2>
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-users-table">
+            <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Adres</th><th>Konum</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gelen Siparişler Sekmesi -->
+      <div id="admin-tab-orders" class="card hidden">
+        <h2>🛎️ Sipariş Yönetimi</h2>
+        
+        <div class="order-subtabs">
+          <button class="order-subtab-btn active" onclick="switchOrderSubTab('pending')">📥 Gelen Siparişler</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('approved')">✅ Onaylanan Siparişler</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('delivered')">🚚 Teslim Edilenler</button>
+        </div>
+
+        <div id="order-subtab-pending">
+          <div id="orders-container">
+            <p id="no-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Yeni gelen sipariş yok.</p>
+            <div class="admin-table-wrapper">
+              <table class="admin-table hidden" id="orders-table">
+                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="order-subtab-approved" class="hidden">
+          <div id="approved-orders-container">
+            <p id="no-approved-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Onaylanan sipariş yok.</p>
+            <div class="admin-table-wrapper">
+              <table class="admin-table hidden" id="approved-orders-table">
+                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="order-subtab-delivered" class="hidden">
+          <div id="delivered-orders-container">
+            <p id="no-delivered-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Teslim edilen sipariş yok.</p>
+            <div class="admin-table-wrapper">
+              <table class="admin-table hidden" id="delivered-orders-table">
+                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="danger" onclick="logoutAdmin()" style="max-width: 200px; margin-top: 20px;">Yönetici Çıkışı</button>
+    </div>
+  </div>
+
+  <!-- QR Modal -->
+  <div id="qr-modal" class="modal hidden" onclick="closeQrModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <h3 style="color: var(--accent); margin-bottom: 10px;">Konum QR Kodu</h3>
+      <p id="qr-modal-customer" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 5px;"></p>
+      <img id="qr-code-img" src="" alt="Konum QR">
+      <p id="qr-modal-coords" style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 15px; word-break: break-all;"></p>
+      <button class="secondary" onclick="document.getElementById('qr-modal').classList.add('hidden')">Kapat</button>
+    </div>
+  </div>
+
+  <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
+
+  <script>
+    const defaultProducts = [
+      { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
+      { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
+      { id: 3, name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
+      { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
+      { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
+    ];
+    const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjMlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
+
+    let products = JSON.parse(localStorage.getItem('darkapet_products')) || defaultProducts;
+    let sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
+    let orders = JSON.parse(localStorage.getItem('darkapet_orders')) || [];
+    let usersList = JSON.parse(localStorage.getItem('darkapet_users')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
+    let isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
+    let editingProductId = null;
+    let currentCategoryFilter = '';
+    let currentOrderSubTab = 'pending';
+
+    if (currentUser && !usersList.some(u => u.email === currentUser.email)) {
+      usersList.push(currentUser);
+      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+    }
+
+    function saveProducts() { localStorage.setItem('darkapet_products', JSON.stringify(products)); }
+    function saveCart() { localStorage.setItem('darkapet_cart', JSON.stringify(sepet)); }
+    function saveOrders() { localStorage.setItem('darkapet_orders', JSON.stringify(orders)); }
+
+    function playOrderSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playTone = (freq, startTime, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime + startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + startTime);
+          osc.stop(audioCtx.currentTime + startTime + duration);
+        };
+        playTone(587.33, 0, 0.15);
+        playTone(880, 0.2, 0.3);
+      } catch (e) {
+        console.log('Ses çalınamadı:', e);
+      }
+    }
+
+    function showPage(page) {
+      document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(page + '-page');
+      if (target) target.classList.remove('hidden');
+
+      if (page === 'products') renderProducts();
+      if (page === 'cart') renderCart();
+      if (page === 'checkout') renderCheckout();
+      if (page === 'my-orders') renderMyOrders();
+      if (page === 'profile') renderProfile();
+      if (page === 'login') updateLoginUI();
+      if (page === 'admin' && isAdmin) {
+        switchAdminTab('orders');
+      }
+      updateCartCount();
+      updateNotificationBadge();
+      
+      const userLink = document.getElementById('user-link');
+      const myOrdersLink = document.getElementById('my-orders-link');
+      
+      if (currentUser) {
+        userLink.textContent = currentUser.name.split(' ')[0];
+        userLink.onclick = () => showPage('profile');
+        myOrdersLink.classList.remove('hidden');
+      } else {
+        userLink.textContent = 'Giriş';
+        userLink.onclick = () => showPage('login');
+        myOrdersLink.classList.add('hidden');
+      }
+    }
+
+    function switchAdminTab(tabName) {
+      document.querySelectorAll('#admin-page > div[id^="admin-tab-"]').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById('admin-tab-' + tabName).classList.remove('hidden');
+      
+      const btnToActivate = document.querySelector(`.admin-tab-btn[onclick*="${tabName}"]`);
+      if (btnToActivate) btnToActivate.classList.add('active');
+
+      if (tabName === 'products') renderAdminTable();
+      if (tabName === 'users') renderAdminUsers();
+      if (tabName === 'orders') {
+        switchOrderSubTab('pending');
+      }
+    }
+
+    function switchOrderSubTab(subTabName) {
+      currentOrderSubTab = subTabName;
+      ['pending', 'approved', 'delivered'].forEach(name => {
+        const section = document.getElementById('order-subtab-' + name);
+        if (section) section.classList.add('hidden');
+      });
+      document.querySelectorAll('.order-subtab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const activeSection = document.getElementById('order-subtab-' + subTabName);
+      if (activeSection) activeSection.classList.remove('hidden');
+
+      const activeBtn = document.querySelector(`.order-subtab-btn[onclick*="${subTabName}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (subTabName === 'pending') renderOrders();
+      if (subTabName === 'approved') renderApprovedOrders();
+      if (subTabName === 'delivered') renderDeliveredOrders();
+    }
+
+    function filterByCategory(cat) {
+      currentCategoryFilter = cat;
+      showPage('products');
+    }
+
+    function getImageSrc(product) {
+      return product.image && product.image.startsWith('data:image') ? product.image : PLACEHOLDER;
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('product-container');
+      const titleElem = document.getElementById('products-title');
+      
+      let filtered = products.filter(p => p.stock > 0);
+      if (currentCategoryFilter) {
+        filtered = filtered.filter(p => p.category === currentCategoryFilter);
+        titleElem.textContent = currentCategoryFilter + ' Ürünleri';
+      } else {
+        titleElem.textContent = 'Tüm Ürünler';
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted);">Bu kategoride şu anda stokta ürün bulunmamaktadır.</p>';
+        return;
+      }
+      container.innerHTML = filtered.map(p => `
+        <div class="product-card">
+          <div>
+            <img src="${getImageSrc(p)}" alt="${p.name}" class="product-img">
+            <h4>${p.name}</h4>
+            <div class="price">${p.price} TL</div>
+            <div class="stock">Stok: ${p.stock} adet</div>
+          </div>
+          <button onclick="addToCart(${p.id})">Sepete Ekle</button>
+        </div>
+      `).join('');
+    }
+
+    function addToCart(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product || product.stock <= 0) return alert('Ürün stokta yok!');
+      const existing = sepet.find(item => item.id === productId);
+      const currentQty = existing ? existing.quantity : 0;
+      if (currentQty >= product.stock) return alert('Yeterli stok yok!');
+      
+      if (existing) existing.quantity += 1;
+      else sepet.push({ id: productId, quantity: 1 });
+      
+      saveCart();
+      updateCartCount();
+      alert('Ürün sepete eklendi.');
+    }
+
+    function updateCartCount() {
+      document.getElementById('cart-count').textContent = sepet.reduce((sum, i) => sum + i.quantity, 0);
+    }
+
+    function renderCart() {
+      const cartDiv = document.getElementById('cart-items');
+      const emptyMsg = document.getElementById('empty-cart-msg');
+      const checkoutBtn = document.getElementById('checkout-btn');
+      let total = 0;
+
+      if (sepet.length === 0) {
+        cartDiv.innerHTML = '';
+        emptyMsg.classList.remove('hidden');
+        checkoutBtn.disabled = true;
+        document.getElementById('cart-total').textContent = '0';
+        return;
+      }
+      
+      emptyMsg.classList.add('hidden');
+      cartDiv.innerHTML = sepet.map(item => {
+        const prod = products.find(p => p.id === item.id);
+        if (!prod) return '';
+        const subtotal = prod.price * item.quantity;
+        total += subtotal;
+        return `<div class="sepet-item">
+          <div>
+            <strong>${prod.name}</strong><br>
+            <small style="color: var(--text-muted);">${prod.price} TL x ${item.quantity} = ${subtotal} TL</small>
+          </div>
+          <div style="display: flex; gap: 5px;">
+            <button class="secondary" style="width: 35px; margin:0; padding:5px;" onclick="changeQty(${item.id}, -1)">-</button>
+            <button class="secondary" style="width: 35px; margin:0; padding:5px;" onclick="changeQty(${item.id}, 1)">+</button>
+          </div>
+        </div>`;
+      }).join('');
+      
+      document.getElementById('cart-total').textContent = total;
+      checkoutBtn.disabled = false;
+    }
+
+    function changeQty(productId, delta) {
+      const item = sepet.find(i => i.id === productId);
+      if (!item) return;
+      item.quantity += delta;
+      if (item.quantity <= 0) {
+        sepet = sepet.filter(i => i.id !== productId);
+      } else {
+        const prod = products.find(p => p.id === productId);
+        if (prod && item.quantity > prod.stock) {
+          item.quantity = prod.stock;
+          alert('Stok sınırına ulaşıldı.');
+        }
+      }
+      saveCart();
+      renderCart();
+      updateCartCount();
+    }
+
+    function renderCheckout() {
+      if (!currentUser) {
+        showPage('login');
+        return;
+      }
+      const addrDiv = document.getElementById('address-select');
+      addrDiv.innerHTML = `
+        <p><strong>Teslimat Adresi:</strong> ${currentUser.address || 'Belirtilmemiş'}</p>
+        <p><strong>Telefon:</strong> ${currentUser.phone || 'Belirtilmemiş'}</p>
+        <p style="margin-top: 5px; font-size: 0.85em; color: var(--text-muted);">Alıcı: ${currentUser.name}</p>
+      `;
+    }
+
+    function placeOrder() {
+      if (!currentUser || sepet.length === 0) return;
+      
+      let total = 0;
+      const orderItems = sepet.map(item => {
+        const prod = products.find(p => p.id === item.id);
+        const sub = prod.price * item.quantity;
+        total += sub;
+        
+        // Stok düşümü
+        if (prod) {
+          prod.stock -= item.quantity;
+          if (prod.stock < 0) prod.stock = 0;
+        }
+
+        return { name: prod ? prod.name : 'Ürün', quantity: item.quantity, price: prod ? prod.price : 0, subtotal: sub };
+      });
+
+      saveProducts();
+
+      const newOrder = {
+        id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+        date: new Date().toLocaleString('tr-TR'),
+        customerName: currentUser.name,
+        customerPhone: currentUser.phone,
+        customerAddress: currentUser.address,
+        customerLocation: currentUser.location || '',
+        paymentMethod: document.getElementById('payment-method').value === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
+        items: orderItems,
+        total: total,
+        status: 'pending' // pending, approved, delivered
+      };
+
+      orders.unshift(newOrder);
+      saveOrders();
+
+      sepet = [];
+      saveCart();
+      updateCartCount();
+
+      playOrderSound();
+      showPage('order-success');
+    }
+
+    function renderMyOrders() {
+      if (!currentUser) return;
+      const myOrders = orders.filter(o => o.customerPhone === currentUser.phone || o.customerName === currentUser.name);
+      const table = document.getElementById('my-orders-table');
+      const tbody = table.querySelector('tbody');
+      const msg = document.getElementById('no-my-orders-msg');
+
+      if (myOrders.length === 0) {
+        table.classList.add('hidden');
+        msg.classList.remove('hidden');
+        return;
+      }
+
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = myOrders.map(o => {
+        let statusText = 'Hazırlanıyor';
+        let statusColor = 'var(--accent)';
+        if (o.status === 'approved') { statusText = 'Onaylandı / Yolda'; statusColor = 'var(--info)'; }
+        if (o.status === 'delivered') { statusText = 'Teslim Edildi'; statusColor = 'var(--success)'; }
+
+        const itemsStr = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+
+        return `<tr>
+          <td><strong>#${o.id}</strong></td>
+          <td>${o.date}</td>
+          <td style="color: var(--accent); font-weight: bold;">${o.total} TL</td>
+          <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
+          <td>${o.paymentMethod}</td>
+          <td><small>${itemsStr}</small></td>
+        </tr>`;
+      }).join('');
+    }
+
+    function toggleForms() {
+      const loginForm = document.getElementById('login-form');
+      const regForm = document.getElementById('register-form');
+      loginForm.classList.toggle('hidden');
+      regForm.classList.toggle('hidden');
+    }
+
+    function getLocation() {
+      if (!navigator.geolocation) {
+        alert('Tarayıcınız konum özelliğini desteklemiyor.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          document.getElementById('reg-location').value = `${lat}, ${lon}`;
+        },
+        () => {
+          alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
+        }
+      );
+    }
+
+    function register() {
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const password = document.getElementById('reg-password').value.trim();
+      const location = document.getElementById('reg-location').value.trim();
+      const address = document.getElementById('reg-address').value.trim();
+
+      if (!name || !email || !phone || !password || !address) {
+        alert('Lütfen tüm zorunlu alanları doldurun.');
+        return;
+      }
+
+      if (usersList.some(u => u.email === email)) {
+        alert('Bu e-posta adresi ile zaten bir kayıt bulunuyor.');
+        return;
+      }
+
+      const newUser = { name, email, phone, password, location, address };
+      usersList.push(newUser);
+      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+
+      currentUser = newUser;
+      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+
+      alert('Kayıt başarılı!');
+      showPage('home');
+    }
+
+    function login() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      const user = usersList.find(u => u.email === email && u.password === password);
+      if (!user) {
+        alert('E-posta veya şifre hatalı!');
+        return;
+      }
+
+      currentUser = user;
+      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+      alert('Giriş başarılı!');
+      showPage('home');
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('darkapet_user');
+      showPage('home');
+      alert('Çıkış yapıldı.');
+    }
+
+    function updateLoginUI() {
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    }
+
+    function renderProfile() {
+      if (!currentUser) return;
+      document.getElementById('profile-name').textContent = currentUser.name;
+      document.getElementById('profile-email').textContent = currentUser.email;
+      document.getElementById('profile-phone').textContent = currentUser.phone;
+      document.getElementById('profile-address').textContent = currentUser.address;
+    }
+
+    function changePassword() {
+      const oldPass = document.getElementById('old-password').value.trim();
+      const newPass = document.getElementById('new-password').value.trim();
+
+      if (!oldPass || !newPass) {
+        alert('Lütfen alanları doldurun.');
+        return;
+      }
+      if (currentUser.password !== oldPass) {
+        alert('Mevcut şifreniz yanlış.');
+        return;
+      }
+
+      currentUser.password = newPass;
+      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+      
+      const idx = usersList.findIndex(u => u.email === currentUser.email);
+      if (idx !== -1) {
+        usersList[idx].password = newPass;
+        localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+      }
+
+      alert('Şifreniz güncellendi.');
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+    }
+
+    function togglePassword(id, btn) {
+      const input = document.getElementById(id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    function adminLogin() {
+      const user = document.getElementById('admin-username').value.trim();
+      const pass = document.getElementById('admin-password').value.trim();
+
+      if (user === 'admin' && pass === '123456') {
+        isAdmin = true;
+        localStorage.setItem('darkapet_admin', JSON.stringify(true));
+        showPage('admin');
+      } else {
+        alert('Yönetici adı veya şifresi hatalı!');
+      }
+    }
+
+    function logoutAdmin() {
+      isAdmin = false;
+      localStorage.removeItem('darkapet_admin');
+      showPage('home');
+      alert('Yönetici oturumu kapatıldı.');
+    }
+
+    function updateNotificationBadge() {
+      const pendingCount = orders.filter(o => o.status === 'pending').length;
+      const badge = document.getElementById('notification-badge');
+      if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    // --- YÖNETİCİ ÜRÜN İŞLEMLERİ ---
+    function renderAdminTable() {
+      const tbody = document.querySelector('#admin-product-table tbody');
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${getImageSrc(p)}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px;">
+              <strong>${p.name}</strong>
+            </div>
+          </td>
+          <td>${p.category}</td>
+          <td>${p.price} TL</td>
+          <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock} adet</td>
+          <td>
+            <button class="secondary" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
+            <button class="danger" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin:0; margin-left: 5px;" onclick="deleteProduct(${p.id})">Sil</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showAddProductForm() {
+      editingProductId = null;
+      document.getElementById('form-title').textContent = 'Yeni Ürün Ekle';
+      document.getElementById('prod-name').value = '';
+      document.getElementById('prod-price').value = '';
+      document.getElementById('prod-stock').value = '';
+      document.getElementById('prod-image-data').value = '';
+      document.getElementById('image-preview').style.display = 'none';
+      document.getElementById('add-product-form').classList.remove('hidden');
+    }
+
+    function cancelAddProduct() {
+      document.getElementById('add-product-form').classList.add('hidden');
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64 = e.target.result;
+        document.getElementById('prod-image-data').value = base64;
+        const preview = document.getElementById('image-preview');
+        preview.src = base64;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function openCamera() {
+      document.getElementById('camera-input').click();
+    }
+
+    function saveProduct() {
+      const name = document.getElementById('prod-name').value.trim();
+      const category = document.getElementById('prod-category').value;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
+      const image = document.getElementById('prod-image-data').value;
+
+      if (!name || isNaN(price) || isNaN(stock)) {
+        alert('Lütfen tüm alanları geçerli şekilde doldurun.');
+        return;
+      }
+
+      if (editingProductId !== null) {
+        const prod = products.find(p => p.id === editingProductId);
+        if (prod) {
+          prod.name = name;
+          prod.category = category;
+          prod.price = price;
+          prod.stock = stock;
+          if (image) prod.image = image;
+        }
+      } else {
+        const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        products.push({ id: newId, name, category, price, stock, image });
+      }
+
+      saveProducts();
+      cancelAddProduct();
+      renderAdminTable();
+    }
+
+    function editProduct(id) {
+      const p = products.find(item => item.id === id);
+      if (!p) return;
+      editingProductId = id;
+      document.getElementById('form-title').textContent = 'Ürünü Düzenle';
+      document.getElementById('prod-name').value = p.name;
+      document.getElementById('prod-category').value = p.category;
+      document.getElementById('prod-price').value = p.price;
+      document.getElementById('prod-stock').value = p.stock;
+      document.getElementById('prod-image-data').value = p.image || '';
+      
+      const preview = document.getElementById('image-preview');
+      if (p.image) {
+        preview.src = p.image;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+
+      document.getElementById('add-product-form').classList.remove('hidden');
+    }
+
+    function deleteProduct(id) {
+      if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
+        products = products.filter(p => p.id !== id);
+        saveProducts();
+        renderAdminTable();
+      }
+    }
+
+    function renderAdminUsers() {
+      const tbody = document.querySelector('#admin-users-table tbody');
+      if (usersList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = usersList.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.email}</td>
+          <td>${u.phone}</td>
+          <td>${u.address}</td>
+          <td>${u.location ? `<button class="secondary" style="width: auto; padding: 4px 8px; font-size: 0.8em; margin:0;" onclick="showQrModal('${u.name}', '${u.location}')">Konum QR</button>` : 'Yok'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function showQrModal(customerName, coords) {
+      document.getElementById('qr-modal-customer').textContent = customerName;
+      document.getElementById('qr-modal-coords').textContent = 'Koordinat: ' + coords;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
+      document.getElementById('qr-code-img').src = qrUrl;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal(e) {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    // --- SİPARİŞ YAZDIRMA FONKSİYONU ---
+    function printOrderReceipt(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const yazdirPenceresi = window.open('', '_blank', 'width=320,height=650');
+      
+      const itemsHtml = order.items.map(i => `
+        <tr>
+          <td>${i.name} (x${i.quantity})</td>
+          <td style="text-align: right;">${i.subtotal} TL</td>
+        </tr>
+      `).join('');
+
+      yazdirPenceresi.document.write(`
+        <html>
+            <head>
+                <title>Fiş - #${order.id}</title>
+                <style>
+                    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 10px; width: 260px; margin: 0; color: #000; }
+                    h3 { text-align: center; margin-bottom: 5px; }
+                    .merkez { text-align: center; }
+                    hr { border: dashed 1px #000; }
+                    table { width: 100%; border-collapse: collapse; }
+                    td { padding: 3px 0; vertical-align: top; }
+                    .toplam { font-weight: bold; font-size: 14px; text-align: right; margin-top: 5px; }
+                </style>
+            </head>
+            <body>
+                <h3>DARKAPET SİPARİŞ FİŞİ</h3>
+                <p class="merkez">Tarih: ${order.date}</p>
+                <hr>
+                <p><strong>Sipariş Kodu:</strong> #${order.id}</p>
+                <p><strong>Müşteri:</strong> ${order.customerName}</p>
+                <p><strong>Telefon:</strong> ${order.customerPhone}</p>
+                <p><strong>Adres:</strong> ${order.customerAddress}</p>
+                <p><strong>Ödeme:</strong> ${order.paymentMethod}</p>
+                <hr>
+                <p><strong>Ürünler:</strong></p>
+                <table>
+                  ${itemsHtml}
+                </table>
+                <hr>
+                <p class="toplam">Toplam: ${order.total} TL</p>
+                <hr>
+                <p class="merkez">Bizi tercih ettiğiniz için teşekkür ederiz!</p>
+            </body>
+        </html>
+      `);
+      
+      yazdirPenceresi.document.close();
+      yazdirPenceresi.focus();
+      
+      setTimeout(() => {
+        yazdirPenceresi.print();
+        yazdirPenceresi.close();
+      }, 300);
+    }
+
+    // --- YÖNETİCİ SİPARİŞ YÖNETİMİ ---
+    function renderOrders() {
+      const pendingOrders = orders.filter(o => o.status === 'pending');
+      const table = document.getElementById('orders-table');
+      const tbody = table.querySelector('tbody');
+      const msg = document.getElementById('no-orders-msg');
+
+      if (pendingOrders.length === 0) {
+        table.classList.add('hidden');
+        msg.classList.remove('hidden');
+        return;
+      }
+
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = pendingOrders.map(o => {
+        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
+        return `
+          <tr>
+            <td>
+              <strong>Sipariş Kodu: #${o.id}</strong><br>
+              <small style="color: var(--text-muted);">${o.date}</small><br><br>
+              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
+              <strong>Adres:</strong> ${o.customerAddress}<br>
+              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
+              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
+              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
+            </td>
+            <td>
+              <button class="success" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="updateOrderStatus('${o.id}', 'approved')">✅ Onayla / Yola Çıkar</button>
+              <button class="danger" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="cancelOrder('${o.id}')">❌ İptal Et</button>
+              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderApprovedOrders() {
+      const approvedOrders = orders.filter(o => o.status === 'approved');
+      const table = document.getElementById('approved-orders-table');
+      const tbody = table.querySelector('tbody');
+      const msg = document.getElementById('no-approved-orders-msg');
+
+      if (approvedOrders.length === 0) {
+        table.classList.add('hidden');
+        msg.classList.remove('hidden');
+        return;
+      }
+
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = approvedOrders.map(o => {
+        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
+        return `
+          <tr>
+            <td>
+              <strong>Sipariş Kodu: #${o.id}</strong><br>
+              <small style="color: var(--text-muted);">${o.date}</small><br><br>
+              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
+              <strong>Adres:</strong> ${o.customerAddress}<br>
+              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
+              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
+              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
+            </td>
+            <td>
+              <button class="success" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="updateOrderStatus('${o.id}', 'delivered')">🚚 Teslim Edildi İşaretle</button>
+              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderDeliveredOrders() {
+      const deliveredOrders = orders.filter(o => o.status === 'delivered');
+      const table = document.getElementById('delivered-orders-table');
+      const tbody = table.querySelector('tbody');
+      const msg = document.getElementById('no-delivered-orders-msg');
+
+      if (deliveredOrders.length === 0) {
+        table.classList.add('hidden');
+        msg.classList.remove('hidden');
+        return;
+      }
+
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = deliveredOrders.map(o => {
+        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
+        return `
+          <tr>
+            <td>
+              <strong>Sipariş Kodu: #${o.id}</strong><br>
+              <small style="color: var(--text-muted);">${o.date}</small><br><br>
+              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
+              <strong>Adres:</strong> ${o.customerAddress}<br>
+              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
+              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
+              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
+            </td>
+            <td>
+              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateOrderStatus(id, newStatus) {
+      const order = orders.find(o => o.id === id);
+      if (order) {
+        order.status = newStatus;
+        saveOrders();
+        switchOrderSubTab(currentOrderSubTab);
+        updateNotificationBadge();
+      }
+    }
+
+    function cancelOrder(id) {
+      if (confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) {
+        const order = orders.find(o => o.id === id);
+        if (order) {
+          // İptal edilirse stokları geri ekle
+          order.items.forEach(item => {
+            const prod = products.find(p => p.name === item.name);
+            if (prod) {
+              prod.stock += item.quantity;
+            }
+          });
+          saveProducts();
+          orders = orders.filter(o => o.id !== id);
+          saveOrders();
+          switchOrderSubTab(currentOrderSubTab);
+          updateNotificationBadge();
+        }
+      }
+    }
+
+    // İlk açılışta sepet ve bildirim rozetini güncelle
+    updateCartCount();
+    updateNotificationBadge();
+  </script>
+</body>
+</html>
