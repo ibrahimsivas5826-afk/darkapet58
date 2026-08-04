@@ -615,15 +615,14 @@
     function changeQty(productId, delta) {
       const item = sepet.find(i => i.id === productId);
       if (!item) return;
+      const product = products.find(p => p.id === productId);
+      
       item.quantity += delta;
       if (item.quantity <= 0) {
         sepet = sepet.filter(i => i.id !== productId);
-      } else {
-        const prod = products.find(p => p.id === productId);
-        if (prod && item.quantity > prod.stock) {
-          item.quantity = prod.stock;
-          alert('Stok sınırına ulaşıldı.');
-        }
+      } else if (product && item.quantity > product.stock) {
+        item.quantity = product.stock;
+        alert('Stok sınırına ulaşıldı.');
       }
       saveCart();
       renderCart();
@@ -632,136 +631,152 @@
 
     function renderCheckout() {
       if (!currentUser) {
+        alert('Sipariş vermek için lütfen giriş yapın.');
         showPage('login');
         return;
       }
       const addrDiv = document.getElementById('address-select');
       addrDiv.innerHTML = `
-        <p><strong>Teslimat Adresi:</strong> ${currentUser.address || 'Belirtilmemiş'}</p>
-        <p><strong>Telefon:</strong> ${currentUser.phone || 'Belirtilmemiş'}</p>
-        <p style="margin-top: 5px; font-size: 0.85em; color: var(--text-muted);">Alıcı: ${currentUser.name}</p>
+        <strong>Teslimat Bilgileri:</strong><br>
+        👤 ${currentUser.name}<br>
+        📞 ${currentUser.phone}<br>
+        📍 ${currentUser.address || 'Adres belirtilmemiş'}
       `;
     }
 
     function placeOrder() {
-      if (!currentUser || sepet.length === 0) return;
-      
-      let total = 0;
-      const orderItems = sepet.map(item => {
+      if (!currentUser) return alert('Oturum açmalısınız!');
+      if (sepet.length === 0) return alert('Sepetiniz boş!');
+
+      for (let item of sepet) {
         const prod = products.find(p => p.id === item.id);
-        const sub = prod.price * item.quantity;
-        total += sub;
-        
-        // Stok düşümü
-        if (prod) {
-          prod.stock -= item.quantity;
-          if (prod.stock < 0) prod.stock = 0;
+        if (!prod || prod.stock < item.quantity) {
+          return alert(`Üzgünüz, "${prod ? prod.name : 'Ürün'}" stokta kalmadı ya da yetersiz.`);
         }
+      }
 
-        return { name: prod ? prod.name : 'Ürün', quantity: item.quantity, price: prod ? prod.price : 0, subtotal: sub };
-      });
-
+      for (let item of sepet) {
+        const prod = products.find(p => p.id === item.id);
+        if (prod) prod.stock -= item.quantity;
+      }
       saveProducts();
 
-      const newOrder = {
-        id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+      let totalAmount = sepet.reduce((sum, item) => {
+        const prod = products.find(p => p.id === item.id);
+        return sum + (prod ? prod.price * item.quantity : 0);
+      }, 0);
+
+      const paymentMethod = document.getElementById('payment-method').value;
+      const order = {
+        id: 'DKP-' + Math.floor(100000 + Math.random() * 900000),
         date: new Date().toLocaleString('tr-TR'),
-        customerName: currentUser.name,
-        customerPhone: currentUser.phone,
-        customerAddress: currentUser.address,
-        customerLocation: currentUser.location || '',
-        paymentMethod: document.getElementById('payment-method').value === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
-        items: orderItems,
-        total: total,
-        status: 'pending' // pending, approved, delivered
+        items: [...sepet],
+        total: totalAmount,
+        status: 'pending',
+        payment: paymentMethod === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
+        customer: { ...currentUser }
       };
 
-      orders.unshift(newOrder);
+      orders.unshift(order);
       saveOrders();
-
       sepet = [];
       saveCart();
       updateCartCount();
-
       playOrderSound();
       showPage('order-success');
     }
 
     function renderMyOrders() {
       if (!currentUser) return;
-      const myOrders = orders.filter(o => o.customerPhone === currentUser.phone || o.customerName === currentUser.name);
-      const table = document.getElementById('my-orders-table');
-      const tbody = table.querySelector('tbody');
-      const msg = document.getElementById('no-my-orders-msg');
+      const userOrders = orders.filter(o => o.customer.email === currentUser.email);
+      const msgElem = document.getElementById('no-my-orders-msg');
+      const tableElem = document.getElementById('my-orders-table');
+      const tbody = tableElem.querySelector('tbody');
 
-      if (myOrders.length === 0) {
-        table.classList.add('hidden');
-        msg.classList.remove('hidden');
+      if (userOrders.length === 0) {
+        msgElem.classList.remove('hidden');
+        tableElem.classList.add('hidden');
         return;
       }
 
-      msg.classList.add('hidden');
-      table.classList.remove('hidden');
+      msgElem.classList.add('hidden');
+      tableElem.classList.remove('hidden');
 
-      tbody.innerHTML = myOrders.map(o => {
-        let statusText = 'Hazırlanıyor';
+      tbody.innerHTML = userOrders.map(o => {
+        let statusText = 'Beklemede';
         let statusColor = 'var(--accent)';
-        if (o.status === 'approved') { statusText = 'Onaylandı / Yolda'; statusColor = 'var(--info)'; }
-        if (o.status === 'delivered') { statusText = 'Teslim Edildi'; statusColor = 'var(--success)'; }
+        if (o.status === 'approved') { statusText = 'Onaylandı'; statusColor = 'var(--success)'; }
+        else if (o.status === 'delivered') { statusText = 'Teslim Edildi'; statusColor = 'var(--info)'; }
 
-        const itemsStr = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+        const itemsList = o.items.map(i => {
+          const p = products.find(prod => prod.id === i.id);
+          return `${p ? p.name : 'Ürün'} x ${i.quantity}`;
+        }).join(', ');
 
         return `<tr>
-          <td><strong>#${o.id}</strong></td>
+          <td><strong>${o.id}</strong></td>
           <td>${o.date}</td>
-          <td style="color: var(--accent); font-weight: bold;">${o.total} TL</td>
+          <td>${o.total} TL</td>
           <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
-          <td>${o.paymentMethod}</td>
-          <td><small>${itemsStr}</small></td>
+          <td>${o.payment}</td>
+          <td><small>${itemsList}</small></td>
         </tr>`;
       }).join('');
     }
 
+    function renderProfile() {
+      if (!currentUser) return;
+      document.getElementById('profile-name').textContent = currentUser.name;
+      document.getElementById('profile-email').textContent = currentUser.email;
+      document.getElementById('profile-phone').textContent = currentUser.phone;
+      document.getElementById('profile-address').textContent = currentUser.address || 'Belirtilmemiş';
+    }
+
     function toggleForms() {
-      const loginForm = document.getElementById('login-form');
-      const regForm = document.getElementById('register-form');
-      loginForm.classList.toggle('hidden');
-      regForm.classList.toggle('hidden');
+      document.getElementById('login-form').classList.toggle('hidden');
+      document.getElementById('register-form').classList.toggle('hidden');
+    }
+
+    function togglePassword(id, btn) {
+      const input = document.getElementById(id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
     }
 
     function getLocation() {
-      if (!navigator.geolocation) {
-        alert('Tarayıcınız konum özelliğini desteklemiyor.');
-        return;
-      }
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
-          document.getElementById('reg-location').value = `${lat}, ${lon}`;
-        },
-        () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          document.getElementById('reg-location').value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+          alert('Konum başarıyla alındı.');
+        }, () => {
           alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
-        }
-      );
+        });
+      } else {
+        alert('Tarayıcınız konum özelliğini desteklemiyor.');
+      }
     }
 
     function register() {
       const name = document.getElementById('reg-name').value.trim();
       const email = document.getElementById('reg-email').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
-      const password = document.getElementById('reg-password').value.trim();
-      const location = document.getElementById('reg-location').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const location = document.getElementById('reg-location').value;
       const address = document.getElementById('reg-address').value.trim();
 
       if (!name || !email || !phone || !password || !address) {
-        alert('Lütfen tüm zorunlu alanları doldurun.');
-        return;
+        return alert('Lütfen tüm zorunlu alanları doldurun.');
       }
 
       if (usersList.some(u => u.email === email)) {
-        alert('Bu e-posta adresi ile zaten bir kayıt bulunuyor.');
-        return;
+        return alert('Bu e-posta adresi ile zaten bir kayıt bulunuyor.');
       }
 
       const newUser = { name, email, phone, password, location, address };
@@ -777,18 +792,34 @@
 
     function login() {
       const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value.trim();
+      const password = document.getElementById('login-password').value;
 
       const user = usersList.find(u => u.email === email && u.password === password);
-      if (!user) {
-        alert('E-posta veya şifre hatalı!');
-        return;
-      }
+      if (!user) return alert('E-posta veya şifre hatalı!');
 
       currentUser = user;
       localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
-      alert('Giriş başarılı!');
+      alert('Giriş başarılı.');
       showPage('home');
+    }
+
+    function changePassword() {
+      const oldPass = document.getElementById('old-password').value;
+      const newPass = document.getElementById('new-password').value;
+
+      if (!oldPass || !newPass) return alert('Lütfen şifre alanlarını doldurun.');
+      if (currentUser.password !== oldPass) return alert('Mevcut şifreniz hatalı!');
+
+      currentUser.password = newPass;
+      const userObj = usersList.find(u => u.email === currentUser.email);
+      if (userObj) userObj.password = newPass;
+
+      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+      alert('Şifreniz başarıyla güncellendi.');
     }
 
     function logout() {
@@ -803,59 +834,13 @@
       document.getElementById('login-password').value = '';
     }
 
-    function renderProfile() {
-      if (!currentUser) return;
-      document.getElementById('profile-name').textContent = currentUser.name;
-      document.getElementById('profile-email').textContent = currentUser.email;
-      document.getElementById('profile-phone').textContent = currentUser.phone;
-      document.getElementById('profile-address').textContent = currentUser.address;
-    }
-
-    function changePassword() {
-      const oldPass = document.getElementById('old-password').value.trim();
-      const newPass = document.getElementById('new-password').value.trim();
-
-      if (!oldPass || !newPass) {
-        alert('Lütfen alanları doldurun.');
-        return;
-      }
-      if (currentUser.password !== oldPass) {
-        alert('Mevcut şifreniz yanlış.');
-        return;
-      }
-
-      currentUser.password = newPass;
-      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
-      
-      const idx = usersList.findIndex(u => u.email === currentUser.email);
-      if (idx !== -1) {
-        usersList[idx].password = newPass;
-        localStorage.setItem('darkapet_users', JSON.stringify(usersList));
-      }
-
-      alert('Şifreniz güncellendi.');
-      document.getElementById('old-password').value = '';
-      document.getElementById('new-password').value = '';
-    }
-
-    function togglePassword(id, btn) {
-      const input = document.getElementById(id);
-      if (input.type === 'password') {
-        input.type = 'text';
-        btn.textContent = '🙈';
-      } else {
-        input.type = 'password';
-        btn.textContent = '👁️';
-      }
-    }
-
     function adminLogin() {
       const user = document.getElementById('admin-username').value.trim();
-      const pass = document.getElementById('admin-password').value.trim();
+      const pass = document.getElementById('admin-password').value;
 
       if (user === 'admin' && pass === '123456') {
         isAdmin = true;
-        localStorage.setItem('darkapet_admin', JSON.stringify(true));
+        localStorage.setItem('darkapet_admin', 'true');
         showPage('admin');
       } else {
         alert('Yönetici adı veya şifresi hatalı!');
@@ -866,21 +851,8 @@
       isAdmin = false;
       localStorage.removeItem('darkapet_admin');
       showPage('home');
-      alert('Yönetici oturumu kapatıldı.');
     }
 
-    function updateNotificationBadge() {
-      const pendingCount = orders.filter(o => o.status === 'pending').length;
-      const badge = document.getElementById('notification-badge');
-      if (pendingCount > 0) {
-        badge.textContent = pendingCount;
-        badge.style.display = 'inline-block';
-      } else {
-        badge.style.display = 'none';
-      }
-    }
-
-    // --- YÖNETİCİ ÜRÜN İŞLEMLERİ ---
     function renderAdminTable() {
       const tbody = document.querySelector('#admin-product-table tbody');
       tbody.innerHTML = products.map(p => `
@@ -888,18 +860,51 @@
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
               <img src="${getImageSrc(p)}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px;">
-              <strong>${p.name}</strong>
+              <span>${p.name}</span>
             </div>
           </td>
           <td>${p.category}</td>
           <td>${p.price} TL</td>
-          <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock} adet</td>
+          <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock}</td>
           <td>
-            <button class="secondary" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
-            <button class="danger" style="width: auto; padding: 5px 10px; font-size: 0.8em; margin:0; margin-left: 5px;" onclick="deleteProduct(${p.id})">Sil</button>
+            <div style="display: flex; gap: 5px;">
+              <button class="secondary" style="width: auto; padding: 5px 10px; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
+              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct(${p.id})">Sil</button>
+            </div>
           </td>
         </tr>
       `).join('');
+    }
+
+    function renderAdminUsers() {
+      const tbody = document.querySelector('#admin-users-table tbody');
+      if (usersList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = usersList.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.email}</td>
+          <td>${u.phone}</td>
+          <td><small>${u.address || '-'}</small></td>
+          <td>${u.location ? `<button class="secondary" style="width:auto; padding:4px 8px; margin:0; font-size:0.8em;" onclick="showQrModal('${u.name}', '${u.location}')">Konum Gör</button>` : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function showQrModal(customerName, coords) {
+      document.getElementById('qr-modal-customer').textContent = customerName;
+      document.getElementById('qr-modal-coords').textContent = 'Koordinatlar: ' + coords;
+      const qrImg = document.getElementById('qr-code-img');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQrModal(e) {
+      if (e.target.id === 'qr-modal') {
+        document.getElementById('qr-modal').classList.add('hidden');
+      }
     }
 
     function showAddProductForm() {
@@ -908,6 +913,7 @@
       document.getElementById('prod-name').value = '';
       document.getElementById('prod-price').value = '';
       document.getElementById('prod-stock').value = '';
+      document.getElementById('prod-category').value = 'Mama';
       document.getElementById('prod-image-data').value = '';
       document.getElementById('image-preview').style.display = 'none';
       document.getElementById('add-product-form').classList.remove('hidden');
@@ -919,16 +925,17 @@
 
     function handleFileSelect(event) {
       const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const base64 = e.target.result;
-        document.getElementById('prod-image-data').value = base64;
-        const preview = document.getElementById('image-preview');
-        preview.src = base64;
-        preview.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Data = e.target.result;
+          document.getElementById('prod-image-data').value = base64Data;
+          const preview = document.getElementById('image-preview');
+          preview.src = base64Data;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
     }
 
     function openCamera() {
@@ -943,11 +950,10 @@
       const image = document.getElementById('prod-image-data').value;
 
       if (!name || isNaN(price) || isNaN(stock)) {
-        alert('Lütfen tüm alanları geçerli şekilde doldurun.');
-        return;
+        return alert('Lütfen tüm alanları geçerli şekilde doldurun.');
       }
 
-      if (editingProductId !== null) {
+      if (editingProductId) {
         const prod = products.find(p => p.id === editingProductId);
         if (prod) {
           prod.name = name;
@@ -964,27 +970,27 @@
       saveProducts();
       cancelAddProduct();
       renderAdminTable();
+      alert('Ürün kaydedildi.');
     }
 
     function editProduct(id) {
-      const p = products.find(item => item.id === id);
-      if (!p) return;
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
       editingProductId = id;
       document.getElementById('form-title').textContent = 'Ürünü Düzenle';
-      document.getElementById('prod-name').value = p.name;
-      document.getElementById('prod-category').value = p.category;
-      document.getElementById('prod-price').value = p.price;
-      document.getElementById('prod-stock').value = p.stock;
-      document.getElementById('prod-image-data').value = p.image || '';
+      document.getElementById('prod-name').value = prod.name;
+      document.getElementById('prod-category').value = prod.category;
+      document.getElementById('prod-price').value = prod.price;
+      document.getElementById('prod-stock').value = prod.stock;
+      document.getElementById('prod-image-data').value = prod.image || '';
       
       const preview = document.getElementById('image-preview');
-      if (p.image) {
-        preview.src = p.image;
+      if (prod.image) {
+        preview.src = prod.image;
         preview.style.display = 'block';
       } else {
         preview.style.display = 'none';
       }
-
       document.getElementById('add-product-form').classList.remove('hidden');
     }
 
@@ -996,208 +1002,124 @@
       }
     }
 
-    function renderAdminUsers() {
-      const tbody = document.querySelector('#admin-users-table tbody');
-      if (usersList.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
-        return;
-      }
-      tbody.innerHTML = usersList.map(u => `
-        <tr>
-          <td><strong>${u.name}</strong></td>
-          <td>${u.email}</td>
-          <td>${u.phone}</td>
-          <td>${u.address}</td>
-          <td>${u.location ? `<button class="secondary" style="width: auto; padding: 4px 8px; font-size: 0.8em; margin:0;" onclick="showQrModal('${u.name}', '${u.location}')">Konum QR</button>` : 'Yok'}</td>
-        </tr>
-      `).join('');
-    }
-
-    function showQrModal(customerName, coords) {
-      document.getElementById('qr-modal-customer').textContent = customerName;
-      document.getElementById('qr-modal-coords').textContent = 'Koordinat: ' + coords;
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
-      document.getElementById('qr-code-img').src = qrUrl;
-      document.getElementById('qr-modal').classList.remove('hidden');
-    }
-
-    function closeQrModal(e) {
-      document.getElementById('qr-modal').classList.add('hidden');
-    }
-
-    // --- SİPARİŞ YAZDIRMA FONKSİYONU ---
-    function printOrderReceipt(orderId) {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-
-      const yazdirPenceresi = window.open('', '_blank', 'width=320,height=650');
-      
-      const itemsHtml = order.items.map(i => `
-        <tr>
-          <td>${i.name} (x${i.quantity})</td>
-          <td style="text-align: right;">${i.subtotal} TL</td>
-        </tr>
-      `).join('');
-
-      yazdirPenceresi.document.write(`
-        <html>
-            <head>
-                <title>Fiş - #${order.id}</title>
-                <style>
-                    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; padding: 10px; width: 260px; margin: 0; color: #000; }
-                    h3 { text-align: center; margin-bottom: 5px; }
-                    .merkez { text-align: center; }
-                    hr { border: dashed 1px #000; }
-                    table { width: 100%; border-collapse: collapse; }
-                    td { padding: 3px 0; vertical-align: top; }
-                    .toplam { font-weight: bold; font-size: 14px; text-align: right; margin-top: 5px; }
-                </style>
-            </head>
-            <body>
-                <h3>DARKAPET SİPARİŞ FİŞİ</h3>
-                <p class="merkez">Tarih: ${order.date}</p>
-                <hr>
-                <p><strong>Sipariş Kodu:</strong> #${order.id}</p>
-                <p><strong>Müşteri:</strong> ${order.customerName}</p>
-                <p><strong>Telefon:</strong> ${order.customerPhone}</p>
-                <p><strong>Adres:</strong> ${order.customerAddress}</p>
-                <p><strong>Ödeme:</strong> ${order.paymentMethod}</p>
-                <hr>
-                <p><strong>Ürünler:</strong></p>
-                <table>
-                  ${itemsHtml}
-                </table>
-                <hr>
-                <p class="toplam">Toplam: ${order.total} TL</p>
-                <hr>
-                <p class="merkez">Bizi tercih ettiğiniz için teşekkür ederiz!</p>
-            </body>
-        </html>
-      `);
-      
-      yazdirPenceresi.document.close();
-      yazdirPenceresi.focus();
-      
-      setTimeout(() => {
-        yazdirPenceresi.print();
-        yazdirPenceresi.close();
-      }, 300);
-    }
-
-    // --- YÖNETİCİ SİPARİŞ YÖNETİMİ ---
     function renderOrders() {
       const pendingOrders = orders.filter(o => o.status === 'pending');
+      const msg = document.getElementById('no-orders-msg');
       const table = document.getElementById('orders-table');
       const tbody = table.querySelector('tbody');
-      const msg = document.getElementById('no-orders-msg');
 
       if (pendingOrders.length === 0) {
-        table.classList.add('hidden');
         msg.classList.remove('hidden');
+        table.classList.add('hidden');
         return;
       }
-
       msg.classList.add('hidden');
       table.classList.remove('hidden');
 
       tbody.innerHTML = pendingOrders.map(o => {
-        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
-        return `
-          <tr>
-            <td>
-              <strong>Sipariş Kodu: #${o.id}</strong><br>
-              <small style="color: var(--text-muted);">${o.date}</small><br><br>
-              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
-              <strong>Adres:</strong> ${o.customerAddress}<br>
-              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
-              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
-              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
-            </td>
-            <td>
-              <button class="success" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="updateOrderStatus('${o.id}', 'approved')">✅ Onayla / Yola Çıkar</button>
-              <button class="danger" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="cancelOrder('${o.id}')">❌ İptal Et</button>
-              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
-            </td>
-          </tr>
-        `;
+        const itemsList = o.items.map(i => {
+          const p = products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
+        }).join('<br>');
+
+        return `<tr>
+          <td>
+            <strong>Sipariş Kodu:</strong> ${o.id} <br>
+            <strong>Tarih:</strong> ${o.date} <br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
+            <strong>Adres:</strong> ${o.customer.address} <br>
+            <strong>Ödeme:</strong> ${o.payment} <br>
+            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
+              <small>${itemsList}</small>
+            </div>
+          </td>
+          <td style="white-space: nowrap;">
+            <button class="success" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.id}', 'approved')">Onayla</button><br>
+            <button class="danger" style="width: auto; padding: 8px 12px;" onclick="cancelOrderAdmin('${o.id}')">İptal Et</button>
+          </td>
+        </tr>`;
       }).join('');
     }
 
     function renderApprovedOrders() {
       const approvedOrders = orders.filter(o => o.status === 'approved');
+      const msg = document.getElementById('no-approved-orders-msg');
       const table = document.getElementById('approved-orders-table');
       const tbody = table.querySelector('tbody');
-      const msg = document.getElementById('no-approved-orders-msg');
 
       if (approvedOrders.length === 0) {
-        table.classList.add('hidden');
         msg.classList.remove('hidden');
+        table.classList.add('hidden');
         return;
       }
-
       msg.classList.add('hidden');
       table.classList.remove('hidden');
 
       tbody.innerHTML = approvedOrders.map(o => {
-        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
-        return `
-          <tr>
-            <td>
-              <strong>Sipariş Kodu: #${o.id}</strong><br>
-              <small style="color: var(--text-muted);">${o.date}</small><br><br>
-              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
-              <strong>Adres:</strong> ${o.customerAddress}<br>
-              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
-              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
-              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
-            </td>
-            <td>
-              <button class="success" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="updateOrderStatus('${o.id}', 'delivered')">🚚 Teslim Edildi İşaretle</button>
-              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
-            </td>
-          </tr>
-        `;
+        const itemsList = o.items.map(i => {
+          const p = products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
+        }).join('<br>');
+
+        return `<tr>
+          <td>
+            <strong>Sipariş Kodu:</strong> ${o.id} <br>
+            <strong>Tarih:</strong> ${o.date} <br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
+            <strong>Adres:</strong> ${o.customer.address} <br>
+            <strong>Ödeme:</strong> ${o.payment} <br>
+            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
+              <small>${itemsList}</small>
+            </div>
+          </td>
+          <td style="white-space: nowrap;">
+            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.id}', 'delivered')">Teslim Edildi İşaretle</button>
+          </td>
+        </tr>`;
       }).join('');
     }
 
     function renderDeliveredOrders() {
       const deliveredOrders = orders.filter(o => o.status === 'delivered');
+      const msg = document.getElementById('no-delivered-orders-msg');
       const table = document.getElementById('delivered-orders-table');
       const tbody = table.querySelector('tbody');
-      const msg = document.getElementById('no-delivered-orders-msg');
 
       if (deliveredOrders.length === 0) {
-        table.classList.add('hidden');
         msg.classList.remove('hidden');
+        table.classList.add('hidden');
         return;
       }
-
       msg.classList.add('hidden');
       table.classList.remove('hidden');
 
       tbody.innerHTML = deliveredOrders.map(o => {
-        const itemsList = o.items.map(i => `• ${i.name} (Adet: ${i.quantity}) - ${i.subtotal} TL`).join('<br>');
-        return `
-          <tr>
-            <td>
-              <strong>Sipariş Kodu: #${o.id}</strong><br>
-              <small style="color: var(--text-muted);">${o.date}</small><br><br>
-              <strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})<br>
-              <strong>Adres:</strong> ${o.customerAddress}<br>
-              <strong>Ödeme Türü:</strong> ${o.paymentMethod}<br><br>
-              <strong>Sepet İçeriği:</strong><br>${itemsList}<br><br>
-              <strong style="color: var(--accent);">Toplam Tutar: ${o.total} TL</strong>
-            </td>
-            <td>
-              <button class="info" style="width: auto; padding: 6px 12px; font-size: 0.85em; margin: 2px 0;" onclick="printOrderReceipt('${o.id}')">🖨️ Yazdır</button>
-            </td>
-          </tr>
-        `;
+        const itemsList = o.items.map(i => {
+          const p = products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
+        }).join('<br>');
+
+        return `<tr>
+          <td>
+            <strong>Sipariş Kodu:</strong> ${o.id} <br>
+            <strong>Tarih:</strong> ${o.date} <br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
+            <strong>Adres:</strong> ${o.customer.address} <br>
+            <strong>Ödeme:</strong> ${o.payment} <br>
+            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
+              <small>${itemsList}</small>
+            </div>
+          </td>
+          <td><span style="color: var(--success); font-weight: bold;">Tamamlandı</span></td>
+        </tr>`;
       }).join('');
     }
 
-    function updateOrderStatus(id, newStatus) {
-      const order = orders.find(o => o.id === id);
+    function updateOrderStatus(orderId, newStatus) {
+      const order = orders.find(o => o.id === orderId);
       if (order) {
         order.status = newStatus;
         saveOrders();
@@ -1206,19 +1128,16 @@
       }
     }
 
-    function cancelOrder(id) {
-      if (confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) {
-        const order = orders.find(o => o.id === id);
+    function cancelOrderAdmin(orderId) {
+      if (confirm('Bu siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecektir.')) {
+        const order = orders.find(o => o.id === orderId);
         if (order) {
-          // İptal edilirse stokları geri ekle
-          order.items.forEach(item => {
-            const prod = products.find(p => p.name === item.name);
-            if (prod) {
-              prod.stock += item.quantity;
-            }
-          });
+          for (let item of order.items) {
+            const p = products.find(prod => prod.id === item.id);
+            if (p) p.stock += item.quantity;
+          }
           saveProducts();
-          orders = orders.filter(o => o.id !== id);
+          orders = orders.filter(o => o.id !== orderId);
           saveOrders();
           switchOrderSubTab(currentOrderSubTab);
           updateNotificationBadge();
@@ -1226,9 +1145,22 @@
       }
     }
 
-    // İlk açılışta sepet ve bildirim rozetini güncelle
-    updateCartCount();
-    updateNotificationBadge();
+    function updateNotificationBadge() {
+      const pendingCount = orders.filter(o => o.status === 'pending').length;
+      const badge = document.getElementById('notification-badge');
+      if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    window.onload = function() {
+      updateCartCount();
+      updateNotificationBadge();
+      showPage('home');
+    };
   </script>
 </body>
 </html>
