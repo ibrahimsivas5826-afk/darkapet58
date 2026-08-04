@@ -402,7 +402,23 @@
 
   <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
 
-  <script>
+  <!-- Firebase SDK Imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyALr-2dpQb25ozPgoN-VFiFGze5gQSyYSU",
+      authDomain: "flutter-ai-playground-dde4d.firebaseapp.com",
+      projectId: "flutter-ai-playground-dde4d",
+      storageBucket: "flutter-ai-playground-dde4d.firebasestorage.app",
+      messagingSenderId: "550030262104",
+      appId: "1:550030262104:web:763c1e3c5c30ca6ac2ef2d"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const defaultProducts = [
       { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
       { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
@@ -412,26 +428,71 @@
     ];
     const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjMlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
 
-    let products = JSON.parse(localStorage.getItem('darkapet_products')) || defaultProducts;
-    let sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
-    let orders = JSON.parse(localStorage.getItem('darkapet_orders')) || [];
-    let usersList = JSON.parse(localStorage.getItem('darkapet_users')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
-    let isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
-    let editingProductId = null;
-    let currentCategoryFilter = '';
-    let currentOrderSubTab = 'pending';
+    window.products = [];
+    window.sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
+    window.orders = [];
+    window.usersList = [];
+    window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
+    window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
+    window.editingProductId = null;
+    window.currentCategoryFilter = '';
+    window.currentOrderSubTab = 'pending';
 
-    if (currentUser && !usersList.some(u => u.email === currentUser.email)) {
-      usersList.push(currentUser);
-      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+    // Firestore Canlı Dinleyiciler
+    async function initFirestoreSync() {
+      // Ürünler
+      onSnapshot(collection(db, "products"), (snapshot) => {
+        window.products = [];
+        snapshot.forEach((docSnap) => {
+          window.products.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        if (window.products.length === 0) {
+          // Varsayılan ürünleri ekle
+          defaultProducts.forEach(async (p) => {
+            await setDoc(doc(db, "products", String(p.id)), p);
+          });
+        }
+        renderProducts();
+        if (window.isAdmin) renderAdminTable();
+      });
+
+      // Siparişler
+      onSnapshot(collection(db, "orders"), (snapshot) => {
+        window.orders = [];
+        snapshot.forEach((docSnap) => {
+          window.orders.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        // Tarihe göre sırala
+        window.orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (document.getElementById('my-orders-page') && !document.getElementById('my-orders-page').classList.contains('hidden')) {
+          renderMyOrders();
+        }
+        if (window.isAdmin) {
+          switchOrderSubTab(currentOrderSubTab);
+        }
+        updateNotificationBadge();
+      });
+
+      // Kullanıcılar
+      onSnapshot(collection(db, "users"), (snapshot) => {
+        window.usersList = [];
+        snapshot.forEach((docSnap) => {
+          window.usersList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        if (window.currentUser) {
+          const freshUser = window.usersList.find(u => u.email === window.currentUser.email);
+          if (freshUser) {
+            window.currentUser = freshUser;
+            localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+          }
+        }
+        if (window.isAdmin) renderAdminUsers();
+      });
     }
 
-    function saveProducts() { localStorage.setItem('darkapet_products', JSON.stringify(products)); }
-    function saveCart() { localStorage.setItem('darkapet_cart', JSON.stringify(sepet)); }
-    function saveOrders() { localStorage.setItem('darkapet_orders', JSON.stringify(orders)); }
+    window.saveCart = function() { localStorage.setItem('darkapet_cart', JSON.stringify(window.sepet)); }
 
-    function playOrderSound() {
+    window.playOrderSound = function() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const playTone = (freq, startTime, duration) => {
@@ -453,7 +514,7 @@
       }
     }
 
-    function showPage(page) {
+    window.showPage = function(page) {
       document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
       const target = document.getElementById(page + '-page');
       if (target) target.classList.remove('hidden');
@@ -464,7 +525,7 @@
       if (page === 'my-orders') renderMyOrders();
       if (page === 'profile') renderProfile();
       if (page === 'login') updateLoginUI();
-      if (page === 'admin' && isAdmin) {
+      if (page === 'admin' && window.isAdmin) {
         switchAdminTab('orders');
       }
       updateCartCount();
@@ -473,8 +534,8 @@
       const userLink = document.getElementById('user-link');
       const myOrdersLink = document.getElementById('my-orders-link');
       
-      if (currentUser) {
-        userLink.textContent = currentUser.name.split(' ')[0];
+      if (window.currentUser) {
+        userLink.textContent = window.currentUser.name.split(' ')[0];
         userLink.onclick = () => showPage('profile');
         myOrdersLink.classList.remove('hidden');
       } else {
@@ -484,7 +545,7 @@
       }
     }
 
-    function switchAdminTab(tabName) {
+    window.switchAdminTab = function(tabName) {
       document.querySelectorAll('#admin-page > div[id^="admin-tab-"]').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
 
@@ -500,8 +561,8 @@
       }
     }
 
-    function switchOrderSubTab(subTabName) {
-      currentOrderSubTab = subTabName;
+    window.switchOrderSubTab = function(subTabName) {
+      window.currentOrderSubTab = subTabName;
       ['pending', 'approved', 'delivered'].forEach(name => {
         const section = document.getElementById('order-subtab-' + name);
         if (section) section.classList.add('hidden');
@@ -519,23 +580,23 @@
       if (subTabName === 'delivered') renderDeliveredOrders();
     }
 
-    function filterByCategory(cat) {
-      currentCategoryFilter = cat;
+    window.filterByCategory = function(cat) {
+      window.currentCategoryFilter = cat;
       showPage('products');
     }
 
-    function getImageSrc(product) {
+    window.getImageSrc = function(product) {
       return product.image && product.image.startsWith('data:image') ? product.image : PLACEHOLDER;
     }
 
-    function renderProducts() {
+    window.renderProducts = function() {
       const container = document.getElementById('product-container');
       const titleElem = document.getElementById('products-title');
       
-      let filtered = products.filter(p => p.stock > 0);
-      if (currentCategoryFilter) {
-        filtered = filtered.filter(p => p.category === currentCategoryFilter);
-        titleElem.textContent = currentCategoryFilter + ' Ürünleri';
+      let filtered = window.products.filter(p => p.stock > 0);
+      if (window.currentCategoryFilter) {
+        filtered = filtered.filter(p => p.category === window.currentCategoryFilter);
+        titleElem.textContent = window.currentCategoryFilter + ' Ürünleri';
       } else {
         titleElem.textContent = 'Tüm Ürünler';
       }
@@ -557,32 +618,32 @@
       `).join('');
     }
 
-    function addToCart(productId) {
-      const product = products.find(p => p.id === productId);
+    window.addToCart = function(productId) {
+      const product = window.products.find(p => p.id === productId);
       if (!product || product.stock <= 0) return alert('Ürün stokta yok!');
-      const existing = sepet.find(item => item.id === productId);
+      const existing = window.sepet.find(item => item.id === productId);
       const currentQty = existing ? existing.quantity : 0;
       if (currentQty >= product.stock) return alert('Yeterli stok yok!');
       
       if (existing) existing.quantity += 1;
-      else sepet.push({ id: productId, quantity: 1 });
+      else window.sepet.push({ id: productId, quantity: 1 });
       
       saveCart();
       updateCartCount();
       alert('Ürün sepete eklendi.');
     }
 
-    function updateCartCount() {
-      document.getElementById('cart-count').textContent = sepet.reduce((sum, i) => sum + i.quantity, 0);
+    window.updateCartCount = function() {
+      document.getElementById('cart-count').textContent = window.sepet.reduce((sum, i) => sum + i.quantity, 0);
     }
 
-    function renderCart() {
+    window.renderCart = function() {
       const cartDiv = document.getElementById('cart-items');
       const emptyMsg = document.getElementById('empty-cart-msg');
       const checkoutBtn = document.getElementById('checkout-btn');
       let total = 0;
 
-      if (sepet.length === 0) {
+      if (window.sepet.length === 0) {
         cartDiv.innerHTML = '';
         emptyMsg.classList.remove('hidden');
         checkoutBtn.disabled = true;
@@ -591,8 +652,8 @@
       }
       
       emptyMsg.classList.add('hidden');
-      cartDiv.innerHTML = sepet.map(item => {
-        const prod = products.find(p => p.id === item.id);
+      cartDiv.innerHTML = window.sepet.map(item => {
+        const prod = window.products.find(p => p.id === item.id);
         if (!prod) return '';
         const subtotal = prod.price * item.quantity;
         total += subtotal;
@@ -612,14 +673,14 @@
       checkoutBtn.disabled = false;
     }
 
-    function changeQty(productId, delta) {
-      const item = sepet.find(i => i.id === productId);
+    window.changeQty = function(productId, delta) {
+      const item = window.sepet.find(i => i.id === productId);
       if (!item) return;
-      const product = products.find(p => p.id === productId);
+      const product = window.products.find(p => p.id === productId);
       
       item.quantity += delta;
       if (item.quantity <= 0) {
-        sepet = sepet.filter(i => i.id !== productId);
+        window.sepet = window.sepet.filter(i => i.id !== productId);
       } else if (product && item.quantity > product.stock) {
         item.quantity = product.stock;
         alert('Stok sınırına ulaşıldı.');
@@ -629,8 +690,8 @@
       updateCartCount();
     }
 
-    function renderCheckout() {
-      if (!currentUser) {
+    window.renderCheckout = function() {
+      if (!window.currentUser) {
         alert('Sipariş vermek için lütfen giriş yapın.');
         showPage('login');
         return;
@@ -638,57 +699,62 @@
       const addrDiv = document.getElementById('address-select');
       addrDiv.innerHTML = `
         <strong>Teslimat Bilgileri:</strong><br>
-        👤 ${currentUser.name}<br>
-        📞 ${currentUser.phone}<br>
-        📍 ${currentUser.address || 'Adres belirtilmemiş'}
+        👤 ${window.currentUser.name}<br>
+        📞 ${window.currentUser.phone}<br>
+        📍 ${window.currentUser.address || 'Adres belirtilmemiş'}
       `;
     }
 
-    function placeOrder() {
-      if (!currentUser) return alert('Oturum açmalısınız!');
-      if (sepet.length === 0) return alert('Sepetiniz boş!');
+    window.placeOrder = async function() {
+      if (!window.currentUser) return alert('Oturum açmalısınız!');
+      if (window.sepet.length === 0) return alert('Sepetiniz boş!');
 
-      for (let item of sepet) {
-        const prod = products.find(p => p.id === item.id);
+      for (let item of window.sepet) {
+        const prod = window.products.find(p => p.id === item.id);
         if (!prod || prod.stock < item.quantity) {
           return alert(`Üzgünüz, "${prod ? prod.name : 'Ürün'}" stokta kalmadı ya da yetersiz.`);
         }
       }
 
-      for (let item of sepet) {
-        const prod = products.find(p => p.id === item.id);
-        if (prod) prod.stock -= item.quantity;
+      // Stokları Firestore'da güncelle
+      for (let item of window.sepet) {
+        const prod = window.products.find(p => p.id === item.id);
+        if (prod) {
+          prod.stock -= item.quantity;
+          await updateDoc(doc(db, "products", String(prod.id)), { stock: prod.stock });
+        }
       }
-      saveProducts();
 
-      let totalAmount = sepet.reduce((sum, item) => {
-        const prod = products.find(p => p.id === item.id);
+      let totalAmount = window.sepet.reduce((sum, item) => {
+        const prod = window.products.find(p => p.id === item.id);
         return sum + (prod ? prod.price * item.quantity : 0);
       }, 0);
 
       const paymentMethod = document.getElementById('payment-method').value;
+      const orderId = 'DKP-' + Math.floor(100000 + Math.random() * 900000);
       const order = {
-        id: 'DKP-' + Math.floor(100000 + Math.random() * 900000),
+        id: orderId,
         date: new Date().toLocaleString('tr-TR'),
-        items: [...sepet],
+        items: [...window.sepet],
         total: totalAmount,
         status: 'pending',
         payment: paymentMethod === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
-        customer: { ...currentUser }
+        customer: { ...window.currentUser }
       };
 
-      orders.unshift(order);
-      saveOrders();
-      sepet = [];
+      // Firestore'a sipariş ekle
+      await setDoc(doc(db, "orders", orderId), order);
+
+      window.sepet = [];
       saveCart();
       updateCartCount();
       playOrderSound();
       showPage('order-success');
     }
 
-    function renderMyOrders() {
-      if (!currentUser) return;
-      const userOrders = orders.filter(o => o.customer.email === currentUser.email);
+    window.renderMyOrders = function() {
+      if (!window.currentUser) return;
+      const userOrders = window.orders.filter(o => o.customer.email === window.currentUser.email);
       const msgElem = document.getElementById('no-my-orders-msg');
       const tableElem = document.getElementById('my-orders-table');
       const tbody = tableElem.querySelector('tbody');
@@ -709,7 +775,7 @@
         else if (o.status === 'delivered') { statusText = 'Teslim Edildi'; statusColor = 'var(--info)'; }
 
         const itemsList = o.items.map(i => {
-          const p = products.find(prod => prod.id === i.id);
+          const p = window.products.find(prod => prod.id === i.id);
           return `${p ? p.name : 'Ürün'} x ${i.quantity}`;
         }).join(', ');
 
@@ -724,20 +790,20 @@
       }).join('');
     }
 
-    function renderProfile() {
-      if (!currentUser) return;
-      document.getElementById('profile-name').textContent = currentUser.name;
-      document.getElementById('profile-email').textContent = currentUser.email;
-      document.getElementById('profile-phone').textContent = currentUser.phone;
-      document.getElementById('profile-address').textContent = currentUser.address || 'Belirtilmemiş';
+    window.renderProfile = function() {
+      if (!window.currentUser) return;
+      document.getElementById('profile-name').textContent = window.currentUser.name;
+      document.getElementById('profile-email').textContent = window.currentUser.email;
+      document.getElementById('profile-phone').textContent = window.currentUser.phone;
+      document.getElementById('profile-address').textContent = window.currentUser.address || 'Belirtilmemiş';
     }
 
-    function toggleForms() {
+    window.toggleForms = function() {
       document.getElementById('login-form').classList.toggle('hidden');
       document.getElementById('register-form').classList.toggle('hidden');
     }
 
-    function togglePassword(id, btn) {
+    window.togglePassword = function(id, btn) {
       const input = document.getElementById(id);
       if (input.type === 'password') {
         input.type = 'text';
@@ -748,7 +814,7 @@
       }
     }
 
-    function getLocation() {
+    window.getLocation = function() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(position => {
           const lat = position.coords.latitude;
@@ -763,7 +829,7 @@
       }
     }
 
-    function register() {
+    window.register = async function() {
       const name = document.getElementById('reg-name').value.trim();
       const email = document.getElementById('reg-email').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
@@ -775,71 +841,71 @@
         return alert('Lütfen tüm zorunlu alanları doldurun.');
       }
 
-      if (usersList.some(u => u.email === email)) {
+      if (window.usersList.some(u => u.email === email)) {
         return alert('Bu e-posta adresi ile zaten bir kayıt bulunuyor.');
       }
 
       const newUser = { name, email, phone, password, location, address };
-      usersList.push(newUser);
-      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
+      // Firestore'a kaydet (email'i document ID yapıyoruz)
+      const userDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
+      await setDoc(doc(db, "users", userDocId), newUser);
 
-      currentUser = newUser;
-      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+      window.currentUser = newUser;
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
 
       alert('Kayıt başarılı!');
       showPage('home');
     }
 
-    function login() {
+    window.login = function() {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
 
-      const user = usersList.find(u => u.email === email && u.password === password);
+      const user = window.usersList.find(u => u.email === email && u.password === password);
       if (!user) return alert('E-posta veya şifre hatalı!');
 
-      currentUser = user;
-      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+      window.currentUser = user;
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
       alert('Giriş başarılı.');
       showPage('home');
     }
 
-    function changePassword() {
+    window.changePassword = async function() {
       const oldPass = document.getElementById('old-password').value;
       const newPass = document.getElementById('new-password').value;
 
       if (!oldPass || !newPass) return alert('Lütfen şifre alanlarını doldurun.');
-      if (currentUser.password !== oldPass) return alert('Mevcut şifreniz hatalı!');
+      if (window.currentUser.password !== oldPass) return alert('Mevcut şifreniz hatalı!');
 
-      currentUser.password = newPass;
-      const userObj = usersList.find(u => u.email === currentUser.email);
-      if (userObj) userObj.password = newPass;
+      window.currentUser.password = newPass;
+      const userDocId = window.currentUser.email.replace(/[^a-zA-Z0-9]/g, "_");
+      await updateDoc(doc(db, "users", userDocId), { password: newPass });
 
-      localStorage.setItem('darkapet_users', JSON.stringify(usersList));
-      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
 
       document.getElementById('old-password').value = '';
       document.getElementById('new-password').value = '';
       alert('Şifreniz başarıyla güncellendi.');
     }
 
-    function logout() {
-      currentUser = null;
+    window.logout = function() {
+      window.currentUser = null;
       localStorage.removeItem('darkapet_user');
       showPage('home');
       alert('Çıkış yapıldı.');
     }
 
-    function updateLoginUI() {
+    window.updateLoginUI = function() {
       document.getElementById('login-email').value = '';
       document.getElementById('login-password').value = '';
     }
 
-    function adminLogin() {
+    window.adminLogin = function() {
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value;
 
       if (user === 'admin' && pass === '123456') {
-        isAdmin = true;
+        window.isAdmin = true;
         localStorage.setItem('darkapet_admin', 'true');
         showPage('admin');
       } else {
@@ -847,15 +913,15 @@
       }
     }
 
-    function logoutAdmin() {
-      isAdmin = false;
+    window.logoutAdmin = function() {
+      window.isAdmin = false;
       localStorage.removeItem('darkapet_admin');
       showPage('home');
     }
 
-    function renderAdminTable() {
+    window.renderAdminTable = function() {
       const tbody = document.querySelector('#admin-product-table tbody');
-      tbody.innerHTML = products.map(p => `
+      tbody.innerHTML = window.products.map(p => `
         <tr>
           <td>
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -869,20 +935,20 @@
           <td>
             <div style="display: flex; gap: 5px;">
               <button class="secondary" style="width: auto; padding: 5px 10px; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
-              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct(${p.id})">Sil</button>
+              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct('${p.firestoreId}', ${p.id})">Sil</button>
             </div>
           </td>
         </tr>
       `).join('');
     }
 
-    function renderAdminUsers() {
+    window.renderAdminUsers = function() {
       const tbody = document.querySelector('#admin-users-table tbody');
-      if (usersList.length === 0) {
+      if (window.usersList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
         return;
       }
-      tbody.innerHTML = usersList.map(u => `
+      tbody.innerHTML = window.usersList.map(u => `
         <tr>
           <td><strong>${u.name}</strong></td>
           <td>${u.email}</td>
@@ -893,7 +959,7 @@
       `).join('');
     }
 
-    function showQrModal(customerName, coords) {
+    window.showQrModal = function(customerName, coords) {
       document.getElementById('qr-modal-customer').textContent = customerName;
       document.getElementById('qr-modal-coords').textContent = 'Koordinatlar: ' + coords;
       const qrImg = document.getElementById('qr-code-img');
@@ -901,14 +967,14 @@
       document.getElementById('qr-modal').classList.remove('hidden');
     }
 
-    function closeQrModal(e) {
+    window.closeQrModal = function(e) {
       if (e.target.id === 'qr-modal') {
         document.getElementById('qr-modal').classList.add('hidden');
       }
     }
 
-    function showAddProductForm() {
-      editingProductId = null;
+    window.showAddProductForm = function() {
+      window.editingProductId = null;
       document.getElementById('form-title').textContent = 'Yeni Ürün Ekle';
       document.getElementById('prod-name').value = '';
       document.getElementById('prod-price').value = '';
@@ -919,11 +985,11 @@
       document.getElementById('add-product-form').classList.remove('hidden');
     }
 
-    function cancelAddProduct() {
+    window.cancelAddProduct = function() {
       document.getElementById('add-product-form').classList.add('hidden');
     }
 
-    function handleFileSelect(event) {
+    window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
@@ -938,11 +1004,11 @@
       }
     }
 
-    function openCamera() {
+    window.openCamera = function() {
       document.getElementById('camera-input').click();
     }
 
-    function saveProduct() {
+    window.saveProduct = async function() {
       const name = document.getElementById('prod-name').value.trim();
       const category = document.getElementById('prod-category').value;
       const price = parseFloat(document.getElementById('prod-price').value);
@@ -953,30 +1019,28 @@
         return alert('Lütfen tüm alanları geçerli şekilde doldurun.');
       }
 
-      if (editingProductId) {
-        const prod = products.find(p => p.id === editingProductId);
+      if (window.editingProductId) {
+        const prod = window.products.find(p => p.id === window.editingProductId);
         if (prod) {
-          prod.name = name;
-          prod.category = category;
-          prod.price = price;
-          prod.stock = stock;
-          if (image) prod.image = image;
+          const updatedData = { name, category, price, stock };
+          if (image) updatedData.image = image;
+          await updateDoc(doc(db, "products", String(prod.id)), updatedData);
         }
       } else {
-        const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-        products.push({ id: newId, name, category, price, stock, image });
+        const newId = window.products.length > 0 ? Math.max(...window.products.map(p => p.id)) + 1 : 1;
+        const newProd = { id: newId, name, category, price, stock, image: image || '' };
+        await setDoc(doc(db, "products", String(newId)), newProd);
       }
 
-      saveProducts();
       cancelAddProduct();
       renderAdminTable();
       alert('Ürün kaydedildi.');
     }
 
-    function editProduct(id) {
-      const prod = products.find(p => p.id === id);
+    window.editProduct = function(id) {
+      const prod = window.products.find(p => p.id === id);
       if (!prod) return;
-      editingProductId = id;
+      window.editingProductId = id;
       document.getElementById('form-title').textContent = 'Ürünü Düzenle';
       document.getElementById('prod-name').value = prod.name;
       document.getElementById('prod-category').value = prod.category;
@@ -994,16 +1058,15 @@
       document.getElementById('add-product-form').classList.remove('hidden');
     }
 
-    function deleteProduct(id) {
+    window.deleteProduct = async function(firestoreId, id) {
       if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
-        products = products.filter(p => p.id !== id);
-        saveProducts();
+        await deleteDoc(doc(db, "products", String(id)));
         renderAdminTable();
       }
     }
 
-    function renderOrders() {
-      const pendingOrders = orders.filter(o => o.status === 'pending');
+    window.renderOrders = function() {
+      const pendingOrders = window.orders.filter(o => o.status === 'pending');
       const msg = document.getElementById('no-orders-msg');
       const table = document.getElementById('orders-table');
       const tbody = table.querySelector('tbody');
@@ -1018,7 +1081,7 @@
 
       tbody.innerHTML = pendingOrders.map(o => {
         const itemsList = o.items.map(i => {
-          const p = products.find(prod => prod.id === i.id);
+          const p = window.products.find(prod => prod.id === i.id);
           return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
         }).join('<br>');
 
@@ -1035,15 +1098,15 @@
             </div>
           </td>
           <td style="white-space: nowrap;">
-            <button class="success" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.id}', 'approved')">Onayla</button><br>
-            <button class="danger" style="width: auto; padding: 8px 12px;" onclick="cancelOrderAdmin('${o.id}')">İptal Et</button>
+            <button class="success" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.firestoreId}', 'approved')">Onayla</button><br>
+            <button class="danger" style="width: auto; padding: 8px 12px;" onclick="cancelOrderAdmin('${o.firestoreId}')">İptal Et</button>
           </td>
         </tr>`;
       }).join('');
     }
 
-    function renderApprovedOrders() {
-      const approvedOrders = orders.filter(o => o.status === 'approved');
+    window.renderApprovedOrders = function() {
+      const approvedOrders = window.orders.filter(o => o.status === 'approved');
       const msg = document.getElementById('no-approved-orders-msg');
       const table = document.getElementById('approved-orders-table');
       const tbody = table.querySelector('tbody');
@@ -1058,7 +1121,7 @@
 
       tbody.innerHTML = approvedOrders.map(o => {
         const itemsList = o.items.map(i => {
-          const p = products.find(prod => prod.id === i.id);
+          const p = window.products.find(prod => prod.id === i.id);
           return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
         }).join('<br>');
 
@@ -1075,14 +1138,14 @@
             </div>
           </td>
           <td style="white-space: nowrap;">
-            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.id}', 'delivered')">Teslim Edildi İşaretle</button>
+            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi İşaretle</button>
           </td>
         </tr>`;
       }).join('');
     }
 
-    function renderDeliveredOrders() {
-      const deliveredOrders = orders.filter(o => o.status === 'delivered');
+    window.renderDeliveredOrders = function() {
+      const deliveredOrders = window.orders.filter(o => o.status === 'delivered');
       const msg = document.getElementById('no-delivered-orders-msg');
       const table = document.getElementById('delivered-orders-table');
       const tbody = table.querySelector('tbody');
@@ -1097,7 +1160,7 @@
 
       tbody.innerHTML = deliveredOrders.map(o => {
         const itemsList = o.items.map(i => {
-          const p = products.find(prod => prod.id === i.id);
+          const p = window.products.find(prod => prod.id === i.id);
           return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
         }).join('<br>');
 
@@ -1118,49 +1181,46 @@
       }).join('');
     }
 
-    function updateOrderStatus(orderId, newStatus) {
-      const order = orders.find(o => o.id === orderId);
-      if (order) {
-        order.status = newStatus;
-        saveOrders();
-        switchOrderSubTab(currentOrderSubTab);
-        updateNotificationBadge();
-      }
+    window.updateOrderStatus = async function(firestoreId, newStatus) {
+      await updateDoc(doc(db, "orders", firestoreId), { status: newStatus });
+      switchOrderSubTab(window.currentOrderSubTab);
+      updateNotificationBadge();
     }
 
-    function cancelOrderAdmin(orderId) {
+    window.cancelOrderAdmin = async function(firestoreId) {
       if (confirm('Bu siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecektir.')) {
-        const order = orders.find(o => o.id === orderId);
+        const order = window.orders.find(o => o.firestoreId === firestoreId);
         if (order) {
           for (let item of order.items) {
-            const p = products.find(prod => prod.id === item.id);
-            if (p) p.stock += item.quantity;
+            const p = window.products.find(prod => prod.id === item.id);
+            if (p) {
+              p.stock += item.quantity;
+              await updateDoc(doc(db, "products", String(p.id)), { stock: p.stock });
+            }
           }
-          saveProducts();
-          orders = orders.filter(o => o.id !== orderId);
-          saveOrders();
-          switchOrderSubTab(currentOrderSubTab);
+          await deleteDoc(doc(db, "orders", firestoreId));
+          switchOrderSubTab(window.currentOrderSubTab);
           updateNotificationBadge();
         }
       }
     }
 
-    function updateNotificationBadge() {
-      const pendingCount = orders.filter(o => o.status === 'pending').length;
+    window.updateNotificationBadge = function() {
+      const pendingCount = window.orders.filter(o => o.status === 'pending').length;
       const badge = document.getElementById('notification-badge');
-      if (pendingCount > 0) {
-        badge.textContent = pendingCount;
-        badge.style.display = 'inline-block';
-      } else {
-        badge.style.display = 'none';
+      if (badge) {
+        if (pendingCount > 0) {
+          badge.textContent = pendingCount;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
       }
     }
 
-    window.onload = function() {
-      updateCartCount();
-      updateNotificationBadge();
-      showPage('home');
-    };
+    // Uygulamayı başlat ve Firestore verilerini dinlemeye başla
+    initFirestoreSync();
+    showPage('home');
   </script>
 </body>
 </html>
