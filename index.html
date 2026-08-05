@@ -287,7 +287,7 @@
         <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
       </div>
 
-      <!-- Siparişler (ilk açılışta aktif) -->
+      <!-- Siparişler Sekmesi -->
       <div id="admin-tab-orders" class="card">
         <h2>🛎️ Sipariş Yönetimi</h2>
         <div class="order-subtabs">
@@ -327,7 +327,7 @@
         </div>
       </div>
 
-      <!-- Ürün Yönetimi -->
+      <!-- Ürün Yönetimi Sekmesi -->
       <div id="admin-tab-products" class="card hidden">
         <h2>📦 Ürün Yönetimi</h2>
         <button onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
@@ -366,7 +366,7 @@
         </div>
       </div>
 
-      <!-- Kullanıcılar -->
+      <!-- Kullanıcılar Sekmesi -->
       <div id="admin-tab-users" class="card hidden">
         <h2>👥 Kayıtlı Kullanıcılar</h2>
         <div class="admin-table-wrapper">
@@ -397,7 +397,7 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyALr-2dpQb25ozPgoN-VFiFGze5gQSyYSU",
@@ -431,7 +431,6 @@
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
 
-    // 📌 Default ürünleri sadece bir kez yükle (tek seferlik kontrol)
     async function seedDefaultProducts() {
       const snap = await getDocs(collection(db, "products"));
       if (snap.empty) {
@@ -441,19 +440,15 @@
           batch.set(docRef, p);
         });
         await batch.commit();
-        console.log("Varsayılan ürünler yüklendi.");
       }
     }
 
-    // 🟢 Canlı dinleyiciler
     function initFirestoreSync() {
-      // Ürünler
       onSnapshot(collection(db, "products"), (snapshot) => {
         window.products = [];
         snapshot.forEach((docSnap) => {
           window.products.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
-        // Ekran görünürse render et
         if (!document.getElementById('products-page').classList.contains('hidden')) {
           renderProducts();
         }
@@ -462,7 +457,6 @@
         }
       });
 
-      // Siparişler
       onSnapshot(collection(db, "orders"), (snapshot) => {
         window.orders = [];
         snapshot.forEach((docSnap) => {
@@ -470,7 +464,6 @@
         });
         window.orders.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        // İlgili sekmeleri güncelle
         if (!document.getElementById('my-orders-page').classList.contains('hidden')) renderMyOrders();
         if (window.isAdmin && !document.getElementById('admin-tab-orders').classList.contains('hidden')) {
           switchOrderSubTab(window.currentOrderSubTab);
@@ -478,13 +471,11 @@
         updateNotificationBadge();
       });
 
-      // Kullanıcılar
       onSnapshot(collection(db, "users"), (snapshot) => {
         window.usersList = [];
         snapshot.forEach((docSnap) => {
           window.usersList.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
-        // Oturumdaki kullanıcıyı güncelle
         if (window.currentUser) {
           const freshUser = window.usersList.find(u => u.email === window.currentUser.email);
           if (freshUser) {
@@ -517,7 +508,7 @@
         };
         playTone(587.33, 0, 0.15);
         playTone(880, 0.2, 0.3);
-      } catch (e) { /* sessiz */ }
+      } catch (e) {}
     }
 
     window.showPage = function(page) {
@@ -711,7 +702,6 @@
       if (!window.currentUser) return alert('Oturum açmalısınız!');
       if (window.sepet.length === 0) return alert('Sepetiniz boş!');
 
-      // Stok kontrolü
       for (let item of window.sepet) {
         const prod = window.products.find(p => p.id === item.id);
         if (!prod || prod.stock < item.quantity) {
@@ -719,7 +709,6 @@
         }
       }
 
-      // Stok güncelle
       for (let item of window.sepet) {
         const prod = window.products.find(p => p.id === item.id);
         if (prod) {
@@ -1055,16 +1044,16 @@
       table.classList.remove('hidden');
 
       tbody.innerHTML = pendingOrders.map(o => {
-        const itemsList = o.items.map(i => {
+        const itemsList = (o.items || []).map(i => {
           const p = window.products.find(prod => prod.id === i.id);
-          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
-        }).join('<br>');
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
 
         return `<tr>
           <td>
             <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
-            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
             <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
             <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
@@ -1091,16 +1080,16 @@
       table.classList.remove('hidden');
 
       tbody.innerHTML = approvedOrders.map(o => {
-        const itemsList = o.items.map(i => {
+        const itemsList = (o.items || []).map(i => {
           const p = window.products.find(prod => prod.id === i.id);
-          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
-        }).join('<br>');
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
 
         return `<tr>
           <td>
             <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
-            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
             <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
             <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
@@ -1126,16 +1115,16 @@
       table.classList.remove('hidden');
 
       tbody.innerHTML = deliveredOrders.map(o => {
-        const itemsList = o.items.map(i => {
+        const itemsList = (o.items || []).map(i => {
           const p = window.products.find(prod => prod.id === i.id);
-          return `• ${p ? p.name : 'Ürün'} (${i.quantity} adet)`;
-        }).join('<br>');
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
 
         return `<tr>
           <td>
             <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
-            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
             <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
             <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
@@ -1146,7 +1135,17 @@
 
     window.updateOrderStatus = async function(firestoreId, newStatus) {
       await updateDoc(doc(db, "orders", firestoreId), { status: newStatus });
-      switchOrderSubTab(window.currentOrderSubTab);
+      
+      if (newStatus === 'approved') {
+        window.currentOrderSubTab = 'approved';
+        switchOrderSubTab('approved');
+        alert('✅ Sipariş onaylandı ve "Onaylanan Siparişler" listesine taşındı.');
+      } else if (newStatus === 'delivered') {
+        window.currentOrderSubTab = 'delivered';
+        switchOrderSubTab('delivered');
+      } else {
+        switchOrderSubTab(window.currentOrderSubTab);
+      }
       updateNotificationBadge();
     }
 
@@ -1179,7 +1178,7 @@
       }
     }
 
-    // 🚀 Başlangıç
+    // Başlangıç
     seedDefaultProducts().then(() => {
       initFirestoreSync();
       showPage('home');
