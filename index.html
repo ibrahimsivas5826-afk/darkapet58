@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Darkapet - Evcil Hayvan Ürünleri</title>
-  <!-- Firebase Compat (modülsüz) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     :root {
       --bg-primary: #0f172a;
@@ -125,19 +122,263 @@
       <div class="card" style="text-align: center; padding: 30px 20px;">
         <h2 style="font-size: 1.8em; margin-bottom: 10px;">🐶 Sevimli Dostlarınız İçin En İyisi 🐱</h2>
         <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 1em;">Darkapet kaliteli ürünleri kapınıza getirir. Kapıda nakit veya POS ile güvenli ödeme imkanı.</p>
+        
         <h3 style="text-align: left; font-size: 1.1em; color: var(--text-main); margin-top: 15px;">Kategoriler</h3>
         <div class="categories-grid">
-          <div class="category-card" onclick="filterByCategory('Mama')"><span>🍖</span><h4>Mama</h4></div>
-          <div class="category-card" onclick="filterByCategory('Kum')"><span>🏖️</span><h4>Kum</h4></div>
-          <div class="category-card" onclick="filterByCategory('Aksesuar')"><span>🎾</span><h4>Aksesuar</h4></div>
-          <div class="category-card" onclick="filterByCategory('Bakım')"><span>🧴</span><h4>Bakım</h4></div>
+          <div class="category-card" onclick="filterByCategory('Mama')">
+            <span>🍖</span>
+            <h4>Mama</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Kum')">
+            <span>🏖️</span>
+            <h4>Kum</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Aksesuar')">
+            <span>🎾</span>
+            <h4>Aksesuar</h4>
+          </div>
+          <div class="category-card" onclick="filterByCategory('Bakım')">
+            <span>🧴</span>
+            <h4>Bakım</h4>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Ürünler, Sepet, Profil, Giriş, Siparişler vs. sayfalar (önceki ile aynı) -->
-    <!-- ... (tüm sayfa div'leri burada) ... -->
+    <!-- Ürünler -->
+    <div id="products-page" class="hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 id="products-title" style="margin: 0;">Tüm Ürünler</h2>
+        <button class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
+      </div>
+      <div class="product-grid" id="product-container"></div>
+    </div>
 
+    <!-- Sepet -->
+    <div id="cart-page" class="hidden">
+      <h2>Sepetim</h2>
+      <div class="card">
+        <div id="cart-items"></div>
+        <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <p style="font-size: 1.2em;"><strong>Toplam: <span id="cart-total" style="color: var(--accent);">0</span> TL</strong></p>
+        </div>
+        <button onclick="showPage('checkout')" id="checkout-btn" disabled style="margin-top: 20px;">Siparişi Tamamla</button>
+        <p id="empty-cart-msg" style="text-align: center; color: var(--text-muted); padding: 20px;">Sepetiniz henüz boş.</p>
+      </div>
+    </div>
+
+    <!-- Müşteri Siparişlerim -->
+    <div id="my-orders-page" class="hidden">
+      <div class="card">
+        <h2>📦 Geçmiş Siparişlerim</h2>
+        <div id="my-orders-container">
+          <p id="no-my-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Henüz verdiğiniz bir sipariş bulunmuyor.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="my-orders-table">
+              <thead><tr><th>Sipariş Kodu</th><th>Tarih</th><th>Tutar</th><th>Durum</th><th>Ödeme</th><th>Ürünler</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kullanıcı Profili -->
+    <div id="profile-page" class="hidden">
+      <div class="card">
+        <h2>👤 Kullanıcı Profili</h2>
+        <div style="margin-bottom: 20px; line-height: 1.6;">
+          <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
+          <p><strong>E-posta:</strong> <span id="profile-email"></span></p>
+          <p><strong>Telefon:</strong> <span id="profile-phone"></span></p>
+          <p><strong>Adres:</strong> <span id="profile-address"></span></p>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 20px 0;">
+
+        <h3>Şifre Değiştir</h3>
+        <div class="password-container">
+          <input type="password" id="old-password" placeholder="Mevcut Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('old-password', this)">👁️</button>
+        </div>
+        <div class="password-container">
+          <input type="password" id="new-password" placeholder="Yeni Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('new-password', this)">👁️</button>
+        </div>
+        <button onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
+
+        <button class="danger" onclick="logout()">Çıkış Yap</button>
+      </div>
+    </div>
+
+    <!-- Üye Giriş / Kayıt -->
+    <div id="login-page" class="hidden">
+      <div class="card" id="login-form">
+        <h2>Üye Girişi</h2>
+        <input type="email" id="login-email" placeholder="E-posta adresi">
+        <div class="password-container">
+          <input type="password" id="login-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('login-password', this)">👁️</button>
+        </div>
+        <button onclick="login()">Giriş Yap</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Hesabınız yok mu? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Üye Ol</a></p>
+      </div>
+      
+      <div class="card hidden" id="register-form">
+        <h2>Yeni Üyelik</h2>
+        <input type="text" id="reg-name" placeholder="Ad Soyad">
+        <input type="email" id="reg-email" placeholder="E-posta adresi">
+        <input type="tel" id="reg-phone" placeholder="Telefon Numarası (05XX XXX XX XX)">
+        <div class="password-container">
+          <input type="password" id="reg-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('reg-password', this)">👁️</button>
+        </div>
+        <button onclick="getLocation()" class="secondary">📍 Konumumu Otomatik Al</button>
+        <input type="text" id="reg-location" placeholder="Enlem, Boylam" readonly>
+        <textarea id="reg-address" placeholder="Açık adresiniz (Teslimat için zorunlu)"></textarea>
+        <button onclick="register()">Kayıt Ol</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Zaten üye misiniz? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Giriş Yap</a></p>
+      </div>
+    </div>
+
+    <!-- Sipariş Onay -->
+    <div id="checkout-page" class="hidden">
+      <div class="card">
+        <h2>Sipariş Onayı</h2>
+        <div id="address-select" style="background: var(--bg-primary); padding: 15px; border-radius: 10px; margin-bottom: 15px; line-height: 1.6;"></div>
+        <label style="color: var(--text-muted);">Ödeme Yöntemi Seçin:</label>
+        <select id="payment-method">
+          <option value="cash">Kapıda Nakit Ödeme</option>
+          <option value="pos">Kapıda POS Cihazı ile Ödeme</option>
+        </select>
+        <button onclick="placeOrder()" style="margin-top: 20px;">Siparişi Onayla</button>
+        <button class="secondary" onclick="showPage('cart')">Sepete Geri Dön</button>
+      </div>
+    </div>
+
+    <!-- Sipariş Başarılı -->
+    <div id="order-success-page" class="hidden">
+      <div class="card" style="text-align: center; padding: 40px 20px;">
+        <h2 style="color: var(--success); font-size: 2em; margin-bottom: 15px;">🎉 Siparişiniz Alındı!</h2>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Siparişiniz başarıyla kaydedildi. "Siparişlerim" menüsünden durumunu takip edebilirsiniz.</p>
+        <button onclick="showPage('home')" style="max-width: 250px; margin: auto;">Ana Sayfaya Dön</button>
+      </div>
+    </div>
+
+    <!-- Admin Giriş -->
+    <div id="admin-login-page" class="hidden">
+      <div class="card" style="max-width: 400px; margin: auto;">
+        <h2>Yönetici Girişi</h2>
+        <input type="text" id="admin-username" placeholder="Kullanıcı adı">
+        <div class="password-container">
+          <input type="password" id="admin-password" placeholder="Şifre">
+          <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
+        </div>
+        <button onclick="adminLogin()">Panele Git</button>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted); font-size: 0.85em;"></p>
+      </div>
+    </div>
+
+    <!-- Admin Paneli -->
+    <div id="admin-page" class="hidden">
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('products')">📦 Ürünler</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
+      </div>
+
+      <!-- Siparişler Sekmesi -->
+      <div id="admin-tab-orders" class="card">
+        <h2>🛎️ Sipariş Yönetimi</h2>
+        <div class="order-subtabs">
+          <button class="order-subtab-btn active" onclick="switchOrderSubTab('pending')">📥 Gelen</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('approved')">✅ Onaylanan</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('delivered')">🚚 Teslim</button>
+        </div>
+
+        <div id="order-subtab-pending">
+          <p id="no-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Yeni gelen sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="order-subtab-approved" class="hidden">
+          <p id="no-approved-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Onaylanan sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="approved-orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="order-subtab-delivered" class="hidden">
+          <p id="no-delivered-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Teslim edilen sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="delivered-orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ürün Yönetimi Sekmesi -->
+      <div id="admin-tab-products" class="card hidden">
+        <h2>📦 Ürün Yönetimi</h2>
+        <button onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
+        
+        <div id="add-product-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
+          <h3 id="form-title">Yeni Ürün Ekle</h3>
+          <input type="text" id="prod-name" placeholder="Ürün adı">
+          <select id="prod-category">
+            <option value="Mama">Mama</option>
+            <option value="Kum">Kum</option>
+            <option value="Aksesuar">Aksesuar</option>
+            <option value="Bakım">Bakım</option>
+          </select>
+          <input type="number" id="prod-price" placeholder="Fiyat (TL)">
+          <input type="number" id="prod-stock" placeholder="Stok adedi">
+          
+          <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Ürün Görseli:</label>
+          <div class="upload-buttons" style="margin-top: 5px;">
+            <button type="button" class="secondary" onclick="document.getElementById('file-input').click()">📁 Galeriden Seç</button>
+            <button type="button" class="secondary" onclick="openCamera()">📷 Kamera</button>
+          </div>
+          <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
+          <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFileSelect(event)">
+          <img id="image-preview" class="image-preview" alt="Önizleme">
+          <input type="hidden" id="prod-image-data" value="">
+          
+          <button onclick="saveProduct()">💾 Kaydet</button>
+          <button class="secondary" onclick="cancelAddProduct()">İptal</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-product-table">
+            <thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Kullanıcılar Sekmesi -->
+      <div id="admin-tab-users" class="card hidden">
+        <h2>👥 Kayıtlı Kullanıcılar</h2>
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-users-table">
+            <thead><tr><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th>Adres</th><th>Konum</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="danger" onclick="logoutAdmin()" style="max-width: 200px; margin-top: 20px;">Yönetici Çıkışı</button>
+    </div>
   </div>
 
   <!-- QR Modal -->
@@ -153,104 +394,145 @@
 
   <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
 
-  <script>
-    // ===================== FIREBASE BAŞLAT =====================
-    firebase.initializeApp({
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+
+    const firebaseConfig = {
       apiKey: "AIzaSyALr-2dpQb25ozPgoN-VFiFGze5gQSyYSU",
       authDomain: "flutter-ai-playground-dde4d.firebaseapp.com",
       projectId: "flutter-ai-playground-dde4d",
       storageBucket: "flutter-ai-playground-dde4d.firebasestorage.app",
       messagingSenderId: "550030262104",
       appId: "1:550030262104:web:763c1e3c5c30ca6ac2ef2d"
-    });
-    const db = firebase.firestore();
+    };
 
-    // ===================== GLOBAL DEĞİŞKENLER =====================
-    let products = [];
-    let orders = [];
-    let users = [];
-    let sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
-    let currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
-    let isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
-    let editingProductId = null;
-    let currentCategoryFilter = '';
-    let currentOrderSubTab = 'pending';
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
+    const defaultProducts = [
+      { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
+      { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
+      { id: 3, name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
+      { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
+      { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
+    ];
+    
     const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
 
-    // ===================== FIREBASE CANLI DİNLEYİCİLER =====================
-    function initFirestoreSync() {
-      // Ürünleri dinle
-      db.collection("products").onSnapshot(snap => {
-        products = [];
-        snap.forEach(doc => products.push({ firestoreId: doc.id, ...doc.data() }));
-        if (!document.getElementById('products-page').classList.contains('hidden')) renderProducts();
-        if (isAdmin && !document.getElementById('admin-tab-products').classList.contains('hidden')) renderAdminTable();
-      });
+    window.products = [];
+    window.sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
+    window.orders = [];
+    window.usersList = [];
+    window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
+    window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
+    window.editingProductId = null;
+    window.currentCategoryFilter = '';
+    window.currentOrderSubTab = 'pending';
 
-      // Siparişleri dinle
-      db.collection("orders").onSnapshot(snap => {
-        orders = [];
-        snap.forEach(doc => orders.push({ firestoreId: doc.id, ...doc.data() }));
-        orders.sort((a, b) => new Date(b.date) - new Date(a.date));
-        if (!document.getElementById('my-orders-page').classList.contains('hidden')) renderMyOrders();
-        if (isAdmin && !document.getElementById('admin-tab-orders').classList.contains('hidden')) switchOrderSubTab(currentOrderSubTab);
-        updateNotificationBadge();
-      });
-
-      // Kullanıcıları dinle
-      db.collection("users").onSnapshot(snap => {
-        users = [];
-        snap.forEach(doc => users.push({ firestoreId: doc.id, ...doc.data() }));
-        if (currentUser) {
-          const fresh = users.find(u => u.email === currentUser.email);
-          if (fresh) {
-            currentUser = fresh;
-            localStorage.setItem('darkapet_user', JSON.stringify(fresh));
-          }
-        }
-        if (isAdmin && !document.getElementById('admin-tab-users').classList.contains('hidden')) renderAdminUsers();
-      });
-    }
-
-    // Varsayılan ürünleri yükle (bir kere)
     async function seedDefaultProducts() {
-      const snap = await db.collection("products").get();
+      const snap = await getDocs(collection(db, "products"));
       if (snap.empty) {
-        const batch = db.batch();
-        const defaults = [
-          { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
-          { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
-          { id: 3, name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
-          { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
-          { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
-        ];
-        defaults.forEach(p => batch.set(db.collection("products").doc(String(p.id)), p));
+        const batch = writeBatch(db);
+        defaultProducts.forEach(p => {
+          const docRef = doc(db, "products", String(p.id));
+          batch.set(docRef, p);
+        });
         await batch.commit();
       }
     }
 
-    // ===================== SAYFA YÖNLENDİRME =====================
-    function showPage(page) {
+    function initFirestoreSync() {
+      onSnapshot(collection(db, "products"), (snapshot) => {
+        window.products = [];
+        snapshot.forEach((docSnap) => {
+          window.products.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        if (!document.getElementById('products-page').classList.contains('hidden')) {
+          renderProducts();
+        }
+        if (window.isAdmin && !document.getElementById('admin-tab-products').classList.contains('hidden')) {
+          renderAdminTable();
+        }
+      });
+
+      onSnapshot(collection(db, "orders"), (snapshot) => {
+        window.orders = [];
+        snapshot.forEach((docSnap) => {
+          window.orders.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        window.orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (!document.getElementById('my-orders-page').classList.contains('hidden')) renderMyOrders();
+        if (window.isAdmin && !document.getElementById('admin-tab-orders').classList.contains('hidden')) {
+          switchOrderSubTab(window.currentOrderSubTab);
+        }
+        updateNotificationBadge();
+      });
+
+      onSnapshot(collection(db, "users"), (snapshot) => {
+        window.usersList = [];
+        snapshot.forEach((docSnap) => {
+          window.usersList.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        if (window.currentUser) {
+          const freshUser = window.usersList.find(u => u.email === window.currentUser.email);
+          if (freshUser) {
+            window.currentUser = freshUser;
+            localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+          }
+        }
+        if (window.isAdmin && !document.getElementById('admin-tab-users').classList.contains('hidden')) {
+          renderAdminUsers();
+        }
+      });
+    }
+
+    window.saveCart = function() { localStorage.setItem('darkapet_cart', JSON.stringify(window.sepet)); }
+
+    window.playOrderSound = function() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playTone = (freq, startTime, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime + startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(audioCtx.currentTime + startTime);
+          osc.stop(audioCtx.currentTime + startTime + duration);
+        };
+        playTone(587.33, 0, 0.15);
+        playTone(880, 0.2, 0.3);
+      } catch (e) {}
+    }
+
+    window.showPage = function(page) {
       document.querySelectorAll('.container > div').forEach(el => el.classList.add('hidden'));
       const target = document.getElementById(page + '-page');
       if (target) target.classList.remove('hidden');
 
       if (page === 'products') renderProducts();
-      else if (page === 'cart') renderCart();
-      else if (page === 'checkout') renderCheckout();
-      else if (page === 'my-orders') renderMyOrders();
-      else if (page === 'profile') renderProfile();
-      else if (page === 'login') updateLoginUI();
-      else if (page === 'admin' && isAdmin) switchAdminTab('orders');
-      
+      if (page === 'cart') renderCart();
+      if (page === 'checkout') renderCheckout();
+      if (page === 'my-orders') renderMyOrders();
+      if (page === 'profile') renderProfile();
+      if (page === 'login') updateLoginUI();
+      if (page === 'admin' && window.isAdmin) {
+        switchAdminTab('orders');
+      }
       updateCartCount();
       updateNotificationBadge();
-
+      
       const userLink = document.getElementById('user-link');
       const myOrdersLink = document.getElementById('my-orders-link');
-      if (currentUser) {
-        userLink.textContent = currentUser.name.split(' ')[0];
+      
+      if (window.currentUser) {
+        userLink.textContent = window.currentUser.name.split(' ')[0];
         userLink.onclick = () => showPage('profile');
         myOrdersLink.classList.remove('hidden');
       } else {
@@ -260,29 +542,61 @@
       }
     }
 
-    function filterByCategory(cat) {
-      currentCategoryFilter = cat;
+    window.switchAdminTab = function(tabName) {
+      document.querySelectorAll('#admin-page > div[id^="admin-tab-"]').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById('admin-tab-' + tabName).classList.remove('hidden');
+      const btnToActivate = document.querySelector(`.admin-tab-btn[onclick*="${tabName}"]`);
+      if (btnToActivate) btnToActivate.classList.add('active');
+
+      if (tabName === 'products') renderAdminTable();
+      if (tabName === 'users') renderAdminUsers();
+      if (tabName === 'orders') switchOrderSubTab('pending');
+    }
+
+    window.switchOrderSubTab = function(subTabName) {
+      window.currentOrderSubTab = subTabName;
+      ['pending', 'approved', 'delivered'].forEach(name => {
+        const section = document.getElementById('order-subtab-' + name);
+        if (section) section.classList.add('hidden');
+      });
+      document.querySelectorAll('.order-subtab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const activeSection = document.getElementById('order-subtab-' + subTabName);
+      if (activeSection) activeSection.classList.remove('hidden');
+      const activeBtn = document.querySelector(`.order-subtab-btn[onclick*="${subTabName}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (subTabName === 'pending') renderOrders();
+      if (subTabName === 'approved') renderApprovedOrders();
+      if (subTabName === 'delivered') renderDeliveredOrders();
+    }
+
+    window.filterByCategory = function(cat) {
+      window.currentCategoryFilter = cat;
       showPage('products');
     }
 
-    function getImageSrc(product) {
+    window.getImageSrc = function(product) {
       return product.image && product.image.startsWith('data:image') ? product.image : PLACEHOLDER;
     }
 
-    // ========== ÜRÜN GÖSTERİMİ ==========
-    function renderProducts() {
+    window.renderProducts = function() {
       const container = document.getElementById('product-container');
-      const title = document.getElementById('products-title');
+      const titleElem = document.getElementById('products-title');
       if (!container) return;
-      let filtered = products.filter(p => p.stock > 0);
-      if (currentCategoryFilter) {
-        filtered = filtered.filter(p => p.category === currentCategoryFilter);
-        title.textContent = currentCategoryFilter + ' Ürünleri';
+      
+      let filtered = window.products.filter(p => p.stock > 0);
+      if (window.currentCategoryFilter) {
+        filtered = filtered.filter(p => p.category === window.currentCategoryFilter);
+        titleElem.textContent = window.currentCategoryFilter + ' Ürünleri';
       } else {
-        title.textContent = 'Tüm Ürünler';
+        titleElem.textContent = 'Tüm Ürünler';
       }
+
       if (filtered.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted);">Bu kategoride stokta ürün yok.</p>';
+        container.innerHTML = '<p style="color: var(--text-muted);">Bu kategoride şu anda stokta ürün bulunmamaktadır.</p>';
         return;
       }
       container.innerHTML = filtered.map(p => `
@@ -291,239 +605,644 @@
             <img src="${getImageSrc(p)}" alt="${p.name}" class="product-img">
             <h4>${p.name}</h4>
             <div class="price">${p.price} TL</div>
-            <div class="stock">Stok: ${p.stock}</div>
+            <div class="stock">Stok: ${p.stock} adet</div>
           </div>
           <button onclick="addToCart(${p.id})">Sepete Ekle</button>
         </div>
       `).join('');
     }
 
-    function addToCart(id) {
-      const p = products.find(x => x.id === id);
-      if (!p || p.stock <= 0) return alert('Stokta yok!');
-      const existing = sepet.find(i => i.id === id);
-      if (existing && existing.quantity >= p.stock) return alert('Yeterli stok yok!');
-      existing ? existing.quantity++ : sepet.push({ id, quantity: 1 });
+    window.addToCart = function(productId) {
+      const product = window.products.find(p => p.id === productId);
+      if (!product || product.stock <= 0) return alert('Ürün stokta yok!');
+      const existing = window.sepet.find(item => item.id === productId);
+      if (existing && existing.quantity >= product.stock) return alert('Yeterli stok yok!');
+      
+      if (existing) existing.quantity += 1;
+      else window.sepet.push({ id: productId, quantity: 1 });
+      
       saveCart();
       updateCartCount();
-      alert('Sepete eklendi.');
+      alert('Ürün sepete eklendi.');
     }
 
-    function updateCartCount() {
-      document.getElementById('cart-count').textContent = sepet.reduce((sum, i) => sum + i.quantity, 0);
+    window.updateCartCount = function() {
+      document.getElementById('cart-count').textContent = window.sepet.reduce((sum, i) => sum + i.quantity, 0);
     }
 
-    function renderCart() {
+    window.renderCart = function() {
       const cartDiv = document.getElementById('cart-items');
       const emptyMsg = document.getElementById('empty-cart-msg');
       const checkoutBtn = document.getElementById('checkout-btn');
       let total = 0;
-      if (!sepet.length) {
+
+      if (window.sepet.length === 0) {
         cartDiv.innerHTML = '';
         emptyMsg.classList.remove('hidden');
         checkoutBtn.disabled = true;
         document.getElementById('cart-total').textContent = '0';
         return;
       }
+      
       emptyMsg.classList.add('hidden');
-      cartDiv.innerHTML = sepet.map(item => {
-        const prod = products.find(p => p.id === item.id);
+      cartDiv.innerHTML = window.sepet.map(item => {
+        const prod = window.products.find(p => p.id === item.id);
         if (!prod) return '';
-        const sub = prod.price * item.quantity;
-        total += sub;
+        const subtotal = prod.price * item.quantity;
+        total += subtotal;
         return `<div class="sepet-item">
-          <div><strong>${prod.name}</strong><br><small style="color: var(--text-muted);">${prod.price} TL x ${item.quantity} = ${sub} TL</small></div>
-          <div style="display:flex;gap:5px;">
-            <button class="secondary" style="width:35px;margin:0;padding:5px;" onclick="changeQty(${item.id},-1)">-</button>
-            <button class="secondary" style="width:35px;margin:0;padding:5px;" onclick="changeQty(${item.id},1)">+</button>
+          <div>
+            <strong>${prod.name}</strong><br>
+            <small style="color: var(--text-muted);">${prod.price} TL x ${item.quantity} = ${subtotal} TL</small>
+          </div>
+          <div style="display: flex; gap: 5px;">
+            <button class="secondary" style="width: 35px; margin:0; padding:5px;" onclick="changeQty(${item.id}, -1)">-</button>
+            <button class="secondary" style="width: 35px; margin:0; padding:5px;" onclick="changeQty(${item.id}, 1)">+</button>
           </div>
         </div>`;
       }).join('');
+      
       document.getElementById('cart-total').textContent = total;
       checkoutBtn.disabled = false;
     }
 
-    function changeQty(id, delta) {
-      const item = sepet.find(i => i.id === id);
+    window.changeQty = function(productId, delta) {
+      const item = window.sepet.find(i => i.id === productId);
       if (!item) return;
-      const prod = products.find(p => p.id === id);
+      const product = window.products.find(p => p.id === productId);
+      
       item.quantity += delta;
-      if (item.quantity <= 0) sepet = sepet.filter(i => i.id !== id);
-      else if (prod && item.quantity > prod.stock) { item.quantity = prod.stock; alert('Stok sınırı!'); }
+      if (item.quantity <= 0) {
+        window.sepet = window.sepet.filter(i => i.id !== productId);
+      } else if (product && item.quantity > product.stock) {
+        item.quantity = product.stock;
+        alert('Stok sınırına ulaşıldı.');
+      }
       saveCart();
       renderCart();
       updateCartCount();
     }
 
-    // ========== KULLANICI İŞLEMLERİ (Firebase) ==========
-    async function register() {
-      const name = document.getElementById('reg-name').value.trim();
-      const email = document.getElementById('reg-email').value.trim();
-      const phone = document.getElementById('reg-phone').value.trim();
-      const password = document.getElementById('reg-password').value;
-      const location = document.getElementById('reg-location').value;
-      const address = document.getElementById('reg-address').value.trim();
-      if (!name || !email || !phone || !password || !address) return alert('Tüm alanları doldurun!');
-      if (users.some(u => u.email === email)) return alert('Bu e-posta zaten kayıtlı.');
-      const newUser = { name, email, phone, password, location, address };
-      await db.collection("users").doc(email.replace(/[^a-zA-Z0-9]/g, "_")).set(newUser);
-      currentUser = newUser;
-      localStorage.setItem('darkapet_user', JSON.stringify(newUser));
-      alert('Kayıt başarılı!');
-      showPage('home');
-    }
-
-    function login() {
-      const email = document.getElementById('login-email').value.trim();
-      const password = document.getElementById('login-password').value;
-      const user = users.find(u => u.email === email && u.password === password);
-      if (!user) return alert('Hatalı e-posta veya şifre!');
-      currentUser = user;
-      localStorage.setItem('darkapet_user', JSON.stringify(user));
-      alert('Giriş başarılı.');
-      showPage('home');
-    }
-
-    function logout() {
-      currentUser = null;
-      localStorage.removeItem('darkapet_user');
-      showPage('home');
-      alert('Çıkış yapıldı.');
-    }
-
-    async function changePassword() {
-      const old = document.getElementById('old-password').value;
-      const newPass = document.getElementById('new-password').value;
-      if (!old || !newPass) return alert('Şifre alanlarını doldurun.');
-      if (currentUser.password !== old) return alert('Mevcut şifre hatalı!');
-      currentUser.password = newPass;
-      await db.collection("users").doc(currentUser.email.replace(/[^a-zA-Z0-9]/g, "_")).update({ password: newPass });
-      localStorage.setItem('darkapet_user', JSON.stringify(currentUser));
-      document.getElementById('old-password').value = '';
-      document.getElementById('new-password').value = '';
-      alert('Şifre güncellendi.');
-    }
-
-    // ========== SİPARİŞ İŞLEMLERİ ==========
-    async function placeOrder() {
-      if (!currentUser || !sepet.length) return alert('Eksik bilgi!');
-      for (let item of sepet) {
-        const prod = products.find(p => p.id === item.id);
-        if (!prod || prod.stock < item.quantity) return alert(`"${prod?.name || 'Ürün'}" için yeterli stok yok.`);
+    window.renderCheckout = function() {
+      if (!window.currentUser) {
+        alert('Sipariş vermek için lütfen giriş yapın.');
+        showPage('login');
+        return;
       }
-      // Stok güncelle
-      for (let item of sepet) {
-        const prod = products.find(p => p.id === item.id);
-        await db.collection("products").doc(String(prod.id)).update({ stock: prod.stock - item.quantity });
+      const addrDiv = document.getElementById('address-select');
+      addrDiv.innerHTML = `
+        <strong>Teslimat Bilgileri:</strong><br>
+        👤 ${window.currentUser.name}<br>
+        📞 ${window.currentUser.phone}<br>
+        📍 ${window.currentUser.address || 'Adres belirtilmemiş'}
+      `;
+    }
+
+    window.placeOrder = async function() {
+      if (!window.currentUser) return alert('Oturum açmalısınız!');
+      if (window.sepet.length === 0) return alert('Sepetiniz boş!');
+
+      for (let item of window.sepet) {
+        const prod = window.products.find(p => p.id === item.id);
+        if (!prod || prod.stock < item.quantity) {
+          return alert(`"${prod ? prod.name : 'Ürün'}" için yeterli stok yok.`);
+        }
       }
-      const total = sepet.reduce((sum, item) => {
-        const prod = products.find(p => p.id === item.id);
-        return sum + (prod.price * item.quantity);
+
+      for (let item of window.sepet) {
+        const prod = window.products.find(p => p.id === item.id);
+        if (prod) {
+          await updateDoc(doc(db, "products", String(prod.id)), { stock: prod.stock - item.quantity });
+        }
+      }
+
+      let totalAmount = window.sepet.reduce((sum, item) => {
+        const prod = window.products.find(p => p.id === item.id);
+        return sum + (prod ? prod.price * item.quantity : 0);
       }, 0);
-      const payment = document.getElementById('payment-method').value === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS';
-      const newOrder = {
-        id: 'DKP-' + Math.floor(100000 + Math.random() * 900000),
+
+      const paymentMethod = document.getElementById('payment-method').value;
+      const orderId = 'DKP-' + Math.floor(100000 + Math.random() * 900000);
+      const order = {
+        id: orderId,
         date: new Date().toLocaleString('tr-TR'),
-        items: JSON.parse(JSON.stringify(sepet)),
-        total,
+        items: [...window.sepet],
+        total: totalAmount,
         status: 'pending',
-        payment,
-        customer: { ...currentUser }
+        payment: paymentMethod === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
+        customer: { ...window.currentUser }
       };
-      await db.collection("orders").doc(newOrder.id).set(newOrder);
-      sepet = [];
+
+      await setDoc(doc(db, "orders", orderId), order);
+
+      window.sepet = [];
       saveCart();
       updateCartCount();
       playOrderSound();
       showPage('order-success');
     }
 
-    // ========== ADMIN İŞLEMLERİ ==========
-    function adminLogin() {
-      if (document.getElementById('admin-username').value.trim() === 'admin' && document.getElementById('admin-password').value === '123456') {
-        isAdmin = true;
-        localStorage.setItem('darkapet_admin', 'true');
-        showPage('admin');
-      } else alert('Hatalı admin bilgileri!');
+    window.renderMyOrders = function() {
+      if (!window.currentUser) return;
+      const userOrders = window.orders.filter(o => o.customer.email === window.currentUser.email);
+      const msgElem = document.getElementById('no-my-orders-msg');
+      const tableElem = document.getElementById('my-orders-table');
+      const tbody = tableElem.querySelector('tbody');
+
+      if (userOrders.length === 0) {
+        msgElem.classList.remove('hidden');
+        tableElem.classList.add('hidden');
+        return;
+      }
+
+      msgElem.classList.add('hidden');
+      tableElem.classList.remove('hidden');
+
+      tbody.innerHTML = userOrders.map(o => {
+        let statusText = 'Beklemede';
+        let statusColor = 'var(--accent)';
+        if (o.status === 'approved') { statusText = 'Onaylandı'; statusColor = 'var(--success)'; }
+        else if (o.status === 'delivered') { statusText = 'Teslim Edildi'; statusColor = 'var(--info)'; }
+
+        const itemsList = o.items.map(i => {
+          const p = window.products.find(prod => prod.id === i.id);
+          return `${p ? p.name : 'Ürün'} x ${i.quantity}`;
+        }).join(', ');
+
+        return `<tr>
+          <td><strong>${o.id}</strong></td>
+          <td>${o.date}</td>
+          <td>${o.total} TL</td>
+          <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
+          <td>${o.payment}</td>
+          <td><small>${itemsList}</small></td>
+        </tr>`;
+      }).join('');
     }
 
-    function logoutAdmin() {
-      isAdmin = false;
+    window.renderProfile = function() {
+      if (!window.currentUser) return;
+      document.getElementById('profile-name').textContent = window.currentUser.name;
+      document.getElementById('profile-email').textContent = window.currentUser.email;
+      document.getElementById('profile-phone').textContent = window.currentUser.phone;
+      document.getElementById('profile-address').textContent = window.currentUser.address || 'Belirtilmemiş';
+    }
+
+    window.toggleForms = function() {
+      document.getElementById('login-form').classList.toggle('hidden');
+      document.getElementById('register-form').classList.toggle('hidden');
+    }
+
+    window.togglePassword = function(id, btn) {
+      const input = document.getElementById(id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    window.getLocation = function() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          document.getElementById('reg-location').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+          alert('Konum başarıyla alındı.');
+        }, () => alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.'));
+      } else alert('Tarayıcı desteklemiyor.');
+    }
+
+    window.register = async function() {
+      const name = document.getElementById('reg-name').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const location = document.getElementById('reg-location').value;
+      const address = document.getElementById('reg-address').value.trim();
+
+      if (!name || !email || !phone || !password || !address) return alert('Lütfen tüm zorunlu alanları doldurun.');
+      if (window.usersList.some(u => u.email === email)) return alert('Bu e-posta zaten kayıtlı.');
+
+      const newUser = { name, email, phone, password, location, address };
+      const userDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
+      await setDoc(doc(db, "users", userDocId), newUser);
+
+      window.currentUser = newUser;
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+      alert('Kayıt başarılı!');
+      showPage('home');
+    }
+
+    window.login = function() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const user = window.usersList.find(u => u.email === email && u.password === password);
+      if (!user) return alert('E-posta veya şifre hatalı!');
+      window.currentUser = user;
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+      alert('Giriş başarılı.');
+      showPage('home');
+    }
+
+    window.changePassword = async function() {
+      const oldPass = document.getElementById('old-password').value;
+      const newPass = document.getElementById('new-password').value;
+      if (!oldPass || !newPass) return alert('Lütfen şifre alanlarını doldurun.');
+      if (window.currentUser.password !== oldPass) return alert('Mevcut şifreniz hatalı!');
+
+      window.currentUser.password = newPass;
+      const userDocId = window.currentUser.email.replace(/[^a-zA-Z0-9]/g, "_");
+      await updateDoc(doc(db, "users", userDocId), { password: newPass });
+      localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+      alert('Şifreniz başarıyla güncellendi.');
+    }
+
+    window.logout = function() {
+      window.currentUser = null;
+      localStorage.removeItem('darkapet_user');
+      showPage('home');
+      alert('Çıkış yapıldı.');
+    }
+
+    window.updateLoginUI = function() {
+      document.getElementById('login-email').value = '';
+      document.getElementById('login-password').value = '';
+    }
+
+    window.adminLogin = function() {
+      const user = document.getElementById('admin-username').value.trim();
+      const pass = document.getElementById('admin-password').value;
+      if (user === 'admin' && pass === '123456') {
+        window.isAdmin = true;
+        localStorage.setItem('darkapet_admin', 'true');
+        showPage('admin');
+      } else {
+        alert('Yönetici adı veya şifresi hatalı!');
+      }
+    }
+
+    window.logoutAdmin = function() {
+      window.isAdmin = false;
       localStorage.removeItem('darkapet_admin');
       showPage('home');
     }
 
-    function switchAdminTab(tab) { /* ... içerik aynı ... */ }
-    function switchOrderSubTab(sub) { /* ... */ }
+    window.renderAdminTable = function() {
+      const tbody = document.querySelector('#admin-product-table tbody');
+      if (!tbody) return;
+      tbody.innerHTML = window.products.map(p => `
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <img src="${getImageSrc(p)}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px;">
+              <span>${p.name}</span>
+            </div>
+          </td>
+          <td>${p.category}</td>
+          <td>${p.price} TL</td>
+          <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock}</td>
+          <td>
+            <div style="display: flex; gap: 5px;">
+              <button class="secondary" style="width: auto; padding: 5px 10px; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
+              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct(${p.id})">Sil</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
 
-    // Sipariş durumu güncelleme ve iptal
-    async function updateOrderStatus(firestoreId, newStatus) {
-      await db.collection("orders").doc(firestoreId).update({ status: newStatus });
-      if (newStatus === 'approved') {
-        currentOrderSubTab = 'approved';
-        switchOrderSubTab('approved');
-        alert('✅ Sipariş onaylandı.');
-      } else if (newStatus === 'delivered') {
-        currentOrderSubTab = 'delivered';
-        switchOrderSubTab('delivered');
+    window.renderAdminUsers = function() {
+      const tbody = document.querySelector('#admin-users-table tbody');
+      if (!tbody) return;
+      if (window.usersList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = window.usersList.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.email}</td>
+          <td>${u.phone}</td>
+          <td><small>${u.address || '-'}</small></td>
+          <td>${u.location ? `<button class="secondary" style="width:auto; padding:4px 8px; margin:0; font-size:0.8em;" onclick="showQrModal('${u.name}', '${u.location}')">Konum Gör</button>` : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    window.showQrModal = function(customerName, coords) {
+      document.getElementById('qr-modal-customer').textContent = customerName;
+      document.getElementById('qr-modal-coords').textContent = 'Koordinatlar: ' + coords;
+      const qrImg = document.getElementById('qr-code-img');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    window.closeQrModal = function(e) {
+      if (e.target.id === 'qr-modal') {
+        document.getElementById('qr-modal').classList.add('hidden');
+      }
+    }
+
+    window.showAddProductForm = function() {
+      window.editingProductId = null;
+      document.getElementById('form-title').textContent = 'Yeni Ürün Ekle';
+      document.getElementById('prod-name').value = '';
+      document.getElementById('prod-price').value = '';
+      document.getElementById('prod-stock').value = '';
+      document.getElementById('prod-category').value = 'Mama';
+      document.getElementById('prod-image-data').value = '';
+      document.getElementById('image-preview').style.display = 'none';
+      document.getElementById('add-product-form').classList.remove('hidden');
+    }
+
+    window.cancelAddProduct = function() {
+      document.getElementById('add-product-form').classList.add('hidden');
+    }
+
+    window.handleFileSelect = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('prod-image-data').value = e.target.result;
+          const preview = document.getElementById('image-preview');
+          preview.src = e.target.result;
+          preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    window.openCamera = function() {
+      document.getElementById('camera-input').click();
+    }
+
+    window.saveProduct = async function() {
+      const name = document.getElementById('prod-name').value.trim();
+      const category = document.getElementById('prod-category').value;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
+      const image = document.getElementById('prod-image-data').value;
+
+      if (!name || isNaN(price) || isNaN(stock)) return alert('Lütfen tüm alanları geçerli şekilde doldurun.');
+
+      if (window.editingProductId) {
+        const updatedData = { name, category, price, stock };
+        if (image) updatedData.image = image;
+        await updateDoc(doc(db, "products", String(window.editingProductId)), updatedData);
       } else {
-        switchOrderSubTab(currentOrderSubTab);
+        const newId = window.products.length > 0 ? Math.max(...window.products.map(p => p.id)) + 1 : 1;
+        await setDoc(doc(db, "products", String(newId)), { id: newId, name, category, price, stock, image: image || '' });
       }
-      updateNotificationBadge();
+
+      cancelAddProduct();
+      renderAdminTable();
+      alert('Ürün kaydedildi.');
     }
 
-    async function cancelOrderAdmin(firestoreId) {
-      if (!confirm('Siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecek.')) return;
-      const order = orders.find(o => o.firestoreId === firestoreId);
-      if (order) {
-        for (let item of order.items) {
-          const p = products.find(prod => prod.id === item.id);
-          if (p) await db.collection("products").doc(String(p.id)).update({ stock: p.stock + item.quantity });
-        }
-        await db.collection("orders").doc(firestoreId).delete();
-        switchOrderSubTab(currentOrderSubTab);
-        updateNotificationBadge();
+    window.editProduct = function(id) {
+      const prod = window.products.find(p => p.id === id);
+      if (!prod) return;
+      window.editingProductId = id;
+      document.getElementById('form-title').textContent = 'Ürünü Düzenle';
+      document.getElementById('prod-name').value = prod.name;
+      document.getElementById('prod-category').value = prod.category;
+      document.getElementById('prod-price').value = prod.price;
+      document.getElementById('prod-stock').value = prod.stock;
+      document.getElementById('prod-image-data').value = prod.image || '';
+      const preview = document.getElementById('image-preview');
+      if (prod.image) {
+        preview.src = prod.image;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
       }
+      document.getElementById('add-product-form').classList.remove('hidden');
     }
 
-    // ========== FİŞ YAZDIRMA ==========
-    function printReceipt(orderId) {
-      const order = orders.find(o => o.id === orderId);
+    window.deleteProduct = async function(id) {
+      if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+      await deleteDoc(doc(db, "products", String(id)));
+      renderAdminTable();
+    }
+
+    window.renderOrders = function() {
+      const pendingOrders = window.orders.filter(o => o.status === 'pending');
+      const msg = document.getElementById('no-orders-msg');
+      const table = document.getElementById('orders-table');
+      const tbody = table.querySelector('tbody');
+
+      if (pendingOrders.length === 0) {
+        msg.classList.remove('hidden');
+        table.classList.add('hidden');
+        return;
+      }
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = pendingOrders.map(o => {
+        const itemsList = (o.items || []).map(i => {
+          const p = window.products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
+
+        return `<tr>
+          <td>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
+          </td>
+          <td style="white-space: nowrap;">
+            <button class="success" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.firestoreId}', 'approved')">Onayla</button><br>
+            <button class="danger" style="width: auto; padding: 8px 12px;" onclick="cancelOrderAdmin('${o.firestoreId}')">İptal Et</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.renderApprovedOrders = function() {
+      const approvedOrders = window.orders.filter(o => o.status === 'approved');
+      const msg = document.getElementById('no-approved-orders-msg');
+      const table = document.getElementById('approved-orders-table');
+      const tbody = table.querySelector('tbody');
+
+      if (approvedOrders.length === 0) {
+        msg.classList.remove('hidden');
+        table.classList.add('hidden');
+        return;
+      }
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = approvedOrders.map(o => {
+        const itemsList = (o.items || []).map(i => {
+          const p = window.products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
+
+        return `<tr>
+          <td>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
+          </td>
+          <td style="white-space: nowrap;">
+            <button class="info" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi</button><br>
+            <button class="secondary" style="width: auto; padding: 8px 12px;" onclick="printReceipt('${o.firestoreId}')">🧾 Fiş Yazdır</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.renderDeliveredOrders = function() {
+      const deliveredOrders = window.orders.filter(o => o.status === 'delivered');
+      const msg = document.getElementById('no-delivered-orders-msg');
+      const table = document.getElementById('delivered-orders-table');
+      const tbody = table.querySelector('tbody');
+
+      if (deliveredOrders.length === 0) {
+        msg.classList.remove('hidden');
+        table.classList.add('hidden');
+        return;
+      }
+      msg.classList.add('hidden');
+      table.classList.remove('hidden');
+
+      tbody.innerHTML = deliveredOrders.map(o => {
+        const itemsList = (o.items || []).map(i => {
+          const p = window.products.find(prod => prod.id === i.id);
+          return `• ${p ? p.name : 'Ürün'} (${i.quantity || 0} adet)`;
+        }).join('<br>') || 'Ürün detayı yok';
+
+        return `<tr>
+          <td>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer?.name || 'Bilinmiyor'} (${o.customer?.phone || ''})<br>
+            <strong>Adres:</strong> ${o.customer?.address || ''}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
+          </td>
+          <td><span style="color: var(--success); font-weight: bold;">Tamamlandı</span></td>
+        </tr>`;
+      }).join('');
+    }
+
+    // 🧾 Fiş Yazdırma Fonksiyonu
+    window.printReceipt = function(firestoreId) {
+      const order = window.orders.find(o => o.firestoreId === firestoreId);
       if (!order) return alert('Sipariş bulunamadı!');
-      const html = `
-        <html><head><title>Fiş - ${order.id}</title>
-        <style>body{font-family:'Courier New',monospace;max-width:300px;margin:auto;padding:20px;font-size:14px;}h2{text-align:center;}.logo{color:#f59e0b;font-weight:bold;font-size:20px;text-align:center;}hr{border:0;border-top:1px dashed #000;margin:10px 0;}table{width:100%;}td{padding:4px 0;}.total{font-size:18px;font-weight:bold;}.footer{text-align:center;margin-top:20px;font-size:12px;}</style></head>
+
+      const itemsList = (order.items || []).map(i => {
+        const p = window.products.find(prod => prod.id === i.id);
+        return `${p ? p.name : 'Ürün'} x ${i.quantity} - ${(p ? p.price * i.quantity : 0)} TL`;
+      }).join('<br>');
+
+      const receiptHTML = `
+        <html>
+        <head>
+          <title>Darkapet Sipariş Fişi - ${order.id}</title>
+          <style>
+            body { font-family: 'Courier New', monospace; max-width: 300px; margin: auto; padding: 20px; font-size: 14px; }
+            h2 { text-align: center; margin-bottom: 5px; }
+            .logo { color: #f59e0b; font-weight: bold; font-size: 20px; text-align: center; }
+            hr { border: 0; border-top: 1px dashed #000; margin: 10px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            td { padding: 4px 0; vertical-align: top; }
+            .total { font-size: 18px; font-weight: bold; }
+            .footer { text-align: center; margin-top: 20px; font-size: 12px; }
+          </style>
+        </head>
         <body>
-          <div class="logo">🐾 Darkapet</div><p style="text-align:center;">Dostlarınız İçin En İyisi</p><hr>
+          <div class="logo">🐾 Darkapet</div>
+          <p style="text-align:center;">Dostlarınız İçin En İyisi</p>
+          <hr>
           <p><strong>Sipariş No:</strong> ${order.id}</p>
           <p><strong>Tarih:</strong> ${order.date}</p>
           <p><strong>Müşteri:</strong> ${order.customer?.name || ''}</p>
           <p><strong>Telefon:</strong> ${order.customer?.phone || ''}</p>
           <p><strong>Adres:</strong> ${order.customer?.address || ''}</p>
-          <p><strong>Ödeme:</strong> ${order.payment}</p><hr>
-          <table>${(order.items || []).map(i => {
-            const p = products.find(prod => prod.id === i.id);
-            return `<tr><td>${p?.name || 'Ürün'}</td><td>x${i.quantity}</td><td style="text-align:right;">${p ? p.price * i.quantity : 0} TL</td></tr>`;
-          }).join('')}</table><hr>
+          <p><strong>Ödeme:</strong> ${order.payment}</p>
+          <hr>
+          <table>
+            ${(order.items || []).map(i => {
+              const p = window.products.find(prod => prod.id === i.id);
+              const tutar = p ? p.price * i.quantity : 0;
+              return `<tr><td>${p ? p.name : 'Ürün'}</td><td>x${i.quantity}</td><td style="text-align:right;">${tutar} TL</td></tr>`;
+            }).join('')}
+          </table>
+          <hr>
           <p class="total">Toplam: ${order.total} TL</p>
           <p style="text-align:center;">Kapıda ${order.payment} ile ödenecektir.</p>
           <div class="footer">Darkapet Ltd. Şti.<br>Teşekkür ederiz!</div>
-          <script>window.onload=function(){window.print();}<\/script>
-        </body></html>`;
-      const win = window.open('', '_blank', 'width=400,height=600');
-      win.document.write(html);
-      win.document.close();
+          <script>
+            window.onload = function() { window.print(); }
+          <\/script>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank', 'width=400,height=600');
+      printWindow.document.write(receiptHTML);
+      printWindow.document.close();
     }
 
-    // ========== BAŞLANGIÇ ==========
+    window.updateOrderStatus = async function(firestoreId, newStatus) {
+      await updateDoc(doc(db, "orders", firestoreId), { status: newStatus });
+      
+      if (newStatus === 'approved') {
+        window.currentOrderSubTab = 'approved';
+        switchOrderSubTab('approved');
+        alert('✅ Sipariş onaylandı ve "Onaylanan Siparişler" listesine taşındı.');
+      } else if (newStatus === 'delivered') {
+        window.currentOrderSubTab = 'delivered';
+        switchOrderSubTab('delivered');
+      } else {
+        switchOrderSubTab(window.currentOrderSubTab);
+      }
+      updateNotificationBadge();
+    }
+
+    window.cancelOrderAdmin = async function(firestoreId) {
+      if (!confirm('Bu siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecektir.')) return;
+      const order = window.orders.find(o => o.firestoreId === firestoreId);
+      if (order) {
+        for (let item of order.items) {
+          const p = window.products.find(prod => prod.id === item.id);
+          if (p) {
+            await updateDoc(doc(db, "products", String(p.id)), { stock: p.stock + item.quantity });
+          }
+        }
+        await deleteDoc(doc(db, "orders", firestoreId));
+        switchOrderSubTab(window.currentOrderSubTab);
+        updateNotificationBadge();
+      }
+    }
+
+    window.updateNotificationBadge = function() {
+      const pendingCount = window.orders.filter(o => o.status === 'pending').length;
+      const badge = document.getElementById('notification-badge');
+      if (badge) {
+        if (pendingCount > 0) {
+          badge.textContent = pendingCount;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    }
+
+    // Başlangıç
     seedDefaultProducts().then(() => {
       initFirestoreSync();
       showPage('home');
     });
-
-    // saveCart, renderAdminTable, renderAdminUsers, QR, diğer yardımcılar...
-    function saveCart() { localStorage.setItem('darkapet_cart', JSON.stringify(sepet)); }
-    // ... (diğer tüm fonksiyonlar eksiksiz aynı)
   </script>
 </body>
 </html>
