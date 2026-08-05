@@ -1094,8 +1094,7 @@
             <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
           <td style="white-space: nowrap;">
-            <button class="info" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi</button><br>
-            <button class="secondary" style="width: auto; padding: 8px 12px;" onclick="printReceipt('${o.firestoreId}')">🧾 Fiş Yazdır</button>
+            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi</button>
           </td>
         </tr>`;
       }).join('');
@@ -1132,65 +1131,6 @@
           <td><span style="color: var(--success); font-weight: bold;">Tamamlandı</span></td>
         </tr>`;
       }).join('');
-    }
-
-    // 🧾 Fiş Yazdırma Fonksiyonu
-    window.printReceipt = function(firestoreId) {
-      const order = window.orders.find(o => o.firestoreId === firestoreId);
-      if (!order) return alert('Sipariş bulunamadı!');
-
-      const itemsList = (order.items || []).map(i => {
-        const p = window.products.find(prod => prod.id === i.id);
-        return `${p ? p.name : 'Ürün'} x ${i.quantity} - ${(p ? p.price * i.quantity : 0)} TL`;
-      }).join('<br>');
-
-      const receiptHTML = `
-        <html>
-        <head>
-          <title>Darkapet Sipariş Fişi - ${order.id}</title>
-          <style>
-            body { font-family: 'Courier New', monospace; max-width: 300px; margin: auto; padding: 20px; font-size: 14px; }
-            h2 { text-align: center; margin-bottom: 5px; }
-            .logo { color: #f59e0b; font-weight: bold; font-size: 20px; text-align: center; }
-            hr { border: 0; border-top: 1px dashed #000; margin: 10px 0; }
-            table { width: 100%; border-collapse: collapse; }
-            td { padding: 4px 0; vertical-align: top; }
-            .total { font-size: 18px; font-weight: bold; }
-            .footer { text-align: center; margin-top: 20px; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="logo">🐾 Darkapet</div>
-          <p style="text-align:center;">Dostlarınız İçin En İyisi</p>
-          <hr>
-          <p><strong>Sipariş No:</strong> ${order.id}</p>
-          <p><strong>Tarih:</strong> ${order.date}</p>
-          <p><strong>Müşteri:</strong> ${order.customer?.name || ''}</p>
-          <p><strong>Telefon:</strong> ${order.customer?.phone || ''}</p>
-          <p><strong>Adres:</strong> ${order.customer?.address || ''}</p>
-          <p><strong>Ödeme:</strong> ${order.payment}</p>
-          <hr>
-          <table>
-            ${(order.items || []).map(i => {
-              const p = window.products.find(prod => prod.id === i.id);
-              const tutar = p ? p.price * i.quantity : 0;
-              return `<tr><td>${p ? p.name : 'Ürün'}</td><td>x${i.quantity}</td><td style="text-align:right;">${tutar} TL</td></tr>`;
-            }).join('')}
-          </table>
-          <hr>
-          <p class="total">Toplam: ${order.total} TL</p>
-          <p style="text-align:center;">Kapıda ${order.payment} ile ödenecektir.</p>
-          <div class="footer">Darkapet Ltd. Şti.<br>Teşekkür ederiz!</div>
-          <script>
-            window.onload = function() { window.print(); }
-          <\/script>
-        </body>
-        </html>
-      `;
-
-      const printWindow = window.open('', '_blank', 'width=400,height=600');
-      printWindow.document.write(receiptHTML);
-      printWindow.document.close();
     }
 
     window.updateOrderStatus = async function(firestoreId, newStatus) {
