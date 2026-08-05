@@ -275,20 +275,60 @@
           <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
         </div>
         <button onclick="adminLogin()">Panele Git</button>
-        <p style="margin-top: 15px; text-align: center; color: var(--text-muted); font-size: 0.85em;":</p>
+        <p style="margin-top: 15px; text-align: center; color: var(--text-muted); font-size: 0.85em;"></p>
       </div>
     </div>
 
     <!-- Admin Paneli -->
     <div id="admin-page" class="hidden">
       <div class="admin-tabs">
-        <button class="admin-tab-btn active" onclick="switchAdminTab('products')">📦 Ürün Yönetimi</button>
+        <button class="admin-tab-btn active" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('products')">📦 Ürünler</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab('orders')">🛎️ Gelen Siparişler</button>
       </div>
 
-      <!-- Ürün Yönetimi Sekmesi -->
-      <div id="admin-tab-products" class="card">
+      <!-- Siparişler (ilk açılışta aktif) -->
+      <div id="admin-tab-orders" class="card">
+        <h2>🛎️ Sipariş Yönetimi</h2>
+        <div class="order-subtabs">
+          <button class="order-subtab-btn active" onclick="switchOrderSubTab('pending')">📥 Gelen</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('approved')">✅ Onaylanan</button>
+          <button class="order-subtab-btn" onclick="switchOrderSubTab('delivered')">🚚 Teslim</button>
+        </div>
+
+        <div id="order-subtab-pending">
+          <p id="no-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Yeni gelen sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="order-subtab-approved" class="hidden">
+          <p id="no-approved-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Onaylanan sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="approved-orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="order-subtab-delivered" class="hidden">
+          <p id="no-delivered-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Teslim edilen sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="delivered-orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ürün Yönetimi -->
+      <div id="admin-tab-products" class="card hidden">
         <h2>📦 Ürün Yönetimi</h2>
         <button onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
         
@@ -326,7 +366,7 @@
         </div>
       </div>
 
-      <!-- Kayıtlı Kullanıcılar Sekmesi -->
+      <!-- Kullanıcılar -->
       <div id="admin-tab-users" class="card hidden">
         <h2>👥 Kayıtlı Kullanıcılar</h2>
         <div class="admin-table-wrapper">
@@ -335,54 +375,6 @@
             <tbody></tbody>
           </table>
         </div>
-      </div>
-
-      <!-- Gelen Siparişler Sekmesi -->
-      <div id="admin-tab-orders" class="card hidden">
-        <h2>🛎️ Sipariş Yönetimi</h2>
-        
-        <div class="order-subtabs">
-          <button class="order-subtab-btn active" onclick="switchOrderSubTab('pending')">📥 Gelen Siparişler</button>
-          <button class="order-subtab-btn" onclick="switchOrderSubTab('approved')">✅ Onaylanan Siparişler</button>
-          <button class="order-subtab-btn" onclick="switchOrderSubTab('delivered')">🚚 Teslim Edilenler</button>
-        </div>
-
-        <div id="order-subtab-pending">
-          <div id="orders-container">
-            <p id="no-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Yeni gelen sipariş yok.</p>
-            <div class="admin-table-wrapper">
-              <table class="admin-table hidden" id="orders-table">
-                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div id="order-subtab-approved" class="hidden">
-          <div id="approved-orders-container">
-            <p id="no-approved-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Onaylanan sipariş yok.</p>
-            <div class="admin-table-wrapper">
-              <table class="admin-table hidden" id="approved-orders-table">
-                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div id="order-subtab-delivered" class="hidden">
-          <div id="delivered-orders-container">
-            <p id="no-delivered-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Teslim edilen sipariş yok.</p>
-            <div class="admin-table-wrapper">
-              <table class="admin-table hidden" id="delivered-orders-table">
-                <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <button class="danger" onclick="logoutAdmin()" style="max-width: 200px; margin-top: 20px;">Yönetici Çıkışı</button>
@@ -402,10 +394,10 @@
 
   <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
 
-  <!-- Firebase SDK Imports -->
+  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyALr-2dpQb25ozPgoN-VFiFGze5gQSyYSU",
@@ -426,7 +418,8 @@
       { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
       { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
     ];
-    const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjMlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
+    
+    const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
 
     window.products = [];
     window.sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
@@ -438,22 +431,35 @@
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
 
-    // Firestore Canlı Dinleyiciler
-    async function initFirestoreSync() {
+    // 📌 Default ürünleri sadece bir kez yükle (tek seferlik kontrol)
+    async function seedDefaultProducts() {
+      const snap = await getDocs(collection(db, "products"));
+      if (snap.empty) {
+        const batch = writeBatch(db);
+        defaultProducts.forEach(p => {
+          const docRef = doc(db, "products", String(p.id));
+          batch.set(docRef, p);
+        });
+        await batch.commit();
+        console.log("Varsayılan ürünler yüklendi.");
+      }
+    }
+
+    // 🟢 Canlı dinleyiciler
+    function initFirestoreSync() {
       // Ürünler
       onSnapshot(collection(db, "products"), (snapshot) => {
         window.products = [];
         snapshot.forEach((docSnap) => {
           window.products.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
-        if (window.products.length === 0) {
-          // Varsayılan ürünleri ekle
-          defaultProducts.forEach(async (p) => {
-            await setDoc(doc(db, "products", String(p.id)), p);
-          });
+        // Ekran görünürse render et
+        if (!document.getElementById('products-page').classList.contains('hidden')) {
+          renderProducts();
         }
-        renderProducts();
-        if (window.isAdmin) renderAdminTable();
+        if (window.isAdmin && !document.getElementById('admin-tab-products').classList.contains('hidden')) {
+          renderAdminTable();
+        }
       });
 
       // Siparişler
@@ -462,13 +468,12 @@
         snapshot.forEach((docSnap) => {
           window.orders.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
-        // Tarihe göre sırala
         window.orders.sort((a, b) => new Date(b.date) - new Date(a.date));
-        if (document.getElementById('my-orders-page') && !document.getElementById('my-orders-page').classList.contains('hidden')) {
-          renderMyOrders();
-        }
-        if (window.isAdmin) {
-          switchOrderSubTab(currentOrderSubTab);
+        
+        // İlgili sekmeleri güncelle
+        if (!document.getElementById('my-orders-page').classList.contains('hidden')) renderMyOrders();
+        if (window.isAdmin && !document.getElementById('admin-tab-orders').classList.contains('hidden')) {
+          switchOrderSubTab(window.currentOrderSubTab);
         }
         updateNotificationBadge();
       });
@@ -479,6 +484,7 @@
         snapshot.forEach((docSnap) => {
           window.usersList.push({ firestoreId: docSnap.id, ...docSnap.data() });
         });
+        // Oturumdaki kullanıcıyı güncelle
         if (window.currentUser) {
           const freshUser = window.usersList.find(u => u.email === window.currentUser.email);
           if (freshUser) {
@@ -486,7 +492,9 @@
             localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
           }
         }
-        if (window.isAdmin) renderAdminUsers();
+        if (window.isAdmin && !document.getElementById('admin-tab-users').classList.contains('hidden')) {
+          renderAdminUsers();
+        }
       });
     }
 
@@ -509,9 +517,7 @@
         };
         playTone(587.33, 0, 0.15);
         playTone(880, 0.2, 0.3);
-      } catch (e) {
-        console.log('Ses çalınamadı:', e);
-      }
+      } catch (e) { /* sessiz */ }
     }
 
     window.showPage = function(page) {
@@ -550,15 +556,12 @@
       document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById('admin-tab-' + tabName).classList.remove('hidden');
-      
       const btnToActivate = document.querySelector(`.admin-tab-btn[onclick*="${tabName}"]`);
       if (btnToActivate) btnToActivate.classList.add('active');
 
       if (tabName === 'products') renderAdminTable();
       if (tabName === 'users') renderAdminUsers();
-      if (tabName === 'orders') {
-        switchOrderSubTab('pending');
-      }
+      if (tabName === 'orders') switchOrderSubTab('pending');
     }
 
     window.switchOrderSubTab = function(subTabName) {
@@ -571,7 +574,6 @@
 
       const activeSection = document.getElementById('order-subtab-' + subTabName);
       if (activeSection) activeSection.classList.remove('hidden');
-
       const activeBtn = document.querySelector(`.order-subtab-btn[onclick*="${subTabName}"]`);
       if (activeBtn) activeBtn.classList.add('active');
 
@@ -592,6 +594,7 @@
     window.renderProducts = function() {
       const container = document.getElementById('product-container');
       const titleElem = document.getElementById('products-title');
+      if (!container) return;
       
       let filtered = window.products.filter(p => p.stock > 0);
       if (window.currentCategoryFilter) {
@@ -622,8 +625,7 @@
       const product = window.products.find(p => p.id === productId);
       if (!product || product.stock <= 0) return alert('Ürün stokta yok!');
       const existing = window.sepet.find(item => item.id === productId);
-      const currentQty = existing ? existing.quantity : 0;
-      if (currentQty >= product.stock) return alert('Yeterli stok yok!');
+      if (existing && existing.quantity >= product.stock) return alert('Yeterli stok yok!');
       
       if (existing) existing.quantity += 1;
       else window.sepet.push({ id: productId, quantity: 1 });
@@ -709,19 +711,19 @@
       if (!window.currentUser) return alert('Oturum açmalısınız!');
       if (window.sepet.length === 0) return alert('Sepetiniz boş!');
 
+      // Stok kontrolü
       for (let item of window.sepet) {
         const prod = window.products.find(p => p.id === item.id);
         if (!prod || prod.stock < item.quantity) {
-          return alert(`Üzgünüz, "${prod ? prod.name : 'Ürün'}" stokta kalmadı ya da yetersiz.`);
+          return alert(`"${prod ? prod.name : 'Ürün'}" için yeterli stok yok.`);
         }
       }
 
-      // Stokları Firestore'da güncelle
+      // Stok güncelle
       for (let item of window.sepet) {
         const prod = window.products.find(p => p.id === item.id);
         if (prod) {
-          prod.stock -= item.quantity;
-          await updateDoc(doc(db, "products", String(prod.id)), { stock: prod.stock });
+          await updateDoc(doc(db, "products", String(prod.id)), { stock: prod.stock - item.quantity });
         }
       }
 
@@ -742,7 +744,6 @@
         customer: { ...window.currentUser }
       };
 
-      // Firestore'a sipariş ekle
       await setDoc(doc(db, "orders", orderId), order);
 
       window.sepet = [];
@@ -816,17 +817,11 @@
 
     window.getLocation = function() {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          document.getElementById('reg-location').value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        navigator.geolocation.getCurrentPosition(pos => {
+          document.getElementById('reg-location').value = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
           alert('Konum başarıyla alındı.');
-        }, () => {
-          alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
-        });
-      } else {
-        alert('Tarayıcınız konum özelliğini desteklemiyor.');
-      }
+        }, () => alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.'));
+      } else alert('Tarayıcı desteklemiyor.');
     }
 
     window.register = async function() {
@@ -837,22 +832,15 @@
       const location = document.getElementById('reg-location').value;
       const address = document.getElementById('reg-address').value.trim();
 
-      if (!name || !email || !phone || !password || !address) {
-        return alert('Lütfen tüm zorunlu alanları doldurun.');
-      }
-
-      if (window.usersList.some(u => u.email === email)) {
-        return alert('Bu e-posta adresi ile zaten bir kayıt bulunuyor.');
-      }
+      if (!name || !email || !phone || !password || !address) return alert('Lütfen tüm zorunlu alanları doldurun.');
+      if (window.usersList.some(u => u.email === email)) return alert('Bu e-posta zaten kayıtlı.');
 
       const newUser = { name, email, phone, password, location, address };
-      // Firestore'a kaydet (email'i document ID yapıyoruz)
       const userDocId = email.replace(/[^a-zA-Z0-9]/g, "_");
       await setDoc(doc(db, "users", userDocId), newUser);
 
       window.currentUser = newUser;
       localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
-
       alert('Kayıt başarılı!');
       showPage('home');
     }
@@ -860,10 +848,8 @@
     window.login = function() {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
-
       const user = window.usersList.find(u => u.email === email && u.password === password);
       if (!user) return alert('E-posta veya şifre hatalı!');
-
       window.currentUser = user;
       localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
       alert('Giriş başarılı.');
@@ -873,16 +859,13 @@
     window.changePassword = async function() {
       const oldPass = document.getElementById('old-password').value;
       const newPass = document.getElementById('new-password').value;
-
       if (!oldPass || !newPass) return alert('Lütfen şifre alanlarını doldurun.');
       if (window.currentUser.password !== oldPass) return alert('Mevcut şifreniz hatalı!');
 
       window.currentUser.password = newPass;
       const userDocId = window.currentUser.email.replace(/[^a-zA-Z0-9]/g, "_");
       await updateDoc(doc(db, "users", userDocId), { password: newPass });
-
       localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
-
       document.getElementById('old-password').value = '';
       document.getElementById('new-password').value = '';
       alert('Şifreniz başarıyla güncellendi.');
@@ -903,7 +886,6 @@
     window.adminLogin = function() {
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value;
-
       if (user === 'admin' && pass === '123456') {
         window.isAdmin = true;
         localStorage.setItem('darkapet_admin', 'true');
@@ -921,6 +903,7 @@
 
     window.renderAdminTable = function() {
       const tbody = document.querySelector('#admin-product-table tbody');
+      if (!tbody) return;
       tbody.innerHTML = window.products.map(p => `
         <tr>
           <td>
@@ -935,7 +918,7 @@
           <td>
             <div style="display: flex; gap: 5px;">
               <button class="secondary" style="width: auto; padding: 5px 10px; margin:0;" onclick="editProduct(${p.id})">Düzenle</button>
-              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct('${p.firestoreId}', ${p.id})">Sil</button>
+              <button class="danger" style="width: auto; padding: 5px 10px; margin:0;" onclick="deleteProduct(${p.id})">Sil</button>
             </div>
           </td>
         </tr>
@@ -944,6 +927,7 @@
 
     window.renderAdminUsers = function() {
       const tbody = document.querySelector('#admin-users-table tbody');
+      if (!tbody) return;
       if (window.usersList.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Kayıtlı kullanıcı bulunmuyor.</td></tr>';
         return;
@@ -994,10 +978,9 @@
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const base64Data = e.target.result;
-          document.getElementById('prod-image-data').value = base64Data;
+          document.getElementById('prod-image-data').value = e.target.result;
           const preview = document.getElementById('image-preview');
-          preview.src = base64Data;
+          preview.src = e.target.result;
           preview.style.display = 'block';
         };
         reader.readAsDataURL(file);
@@ -1015,21 +998,15 @@
       const stock = parseInt(document.getElementById('prod-stock').value);
       const image = document.getElementById('prod-image-data').value;
 
-      if (!name || isNaN(price) || isNaN(stock)) {
-        return alert('Lütfen tüm alanları geçerli şekilde doldurun.');
-      }
+      if (!name || isNaN(price) || isNaN(stock)) return alert('Lütfen tüm alanları geçerli şekilde doldurun.');
 
       if (window.editingProductId) {
-        const prod = window.products.find(p => p.id === window.editingProductId);
-        if (prod) {
-          const updatedData = { name, category, price, stock };
-          if (image) updatedData.image = image;
-          await updateDoc(doc(db, "products", String(prod.id)), updatedData);
-        }
+        const updatedData = { name, category, price, stock };
+        if (image) updatedData.image = image;
+        await updateDoc(doc(db, "products", String(window.editingProductId)), updatedData);
       } else {
         const newId = window.products.length > 0 ? Math.max(...window.products.map(p => p.id)) + 1 : 1;
-        const newProd = { id: newId, name, category, price, stock, image: image || '' };
-        await setDoc(doc(db, "products", String(newId)), newProd);
+        await setDoc(doc(db, "products", String(newId)), { id: newId, name, category, price, stock, image: image || '' });
       }
 
       cancelAddProduct();
@@ -1047,7 +1024,6 @@
       document.getElementById('prod-price').value = prod.price;
       document.getElementById('prod-stock').value = prod.stock;
       document.getElementById('prod-image-data').value = prod.image || '';
-      
       const preview = document.getElementById('image-preview');
       if (prod.image) {
         preview.src = prod.image;
@@ -1058,11 +1034,10 @@
       document.getElementById('add-product-form').classList.remove('hidden');
     }
 
-    window.deleteProduct = async function(firestoreId, id) {
-      if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
-        await deleteDoc(doc(db, "products", String(id)));
-        renderAdminTable();
-      }
+    window.deleteProduct = async function(id) {
+      if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
+      await deleteDoc(doc(db, "products", String(id)));
+      renderAdminTable();
     }
 
     window.renderOrders = function() {
@@ -1087,15 +1062,11 @@
 
         return `<tr>
           <td>
-            <strong>Sipariş Kodu:</strong> ${o.id} <br>
-            <strong>Tarih:</strong> ${o.date} <br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
-            <strong>Adres:</strong> ${o.customer.address} <br>
-            <strong>Ödeme:</strong> ${o.payment} <br>
-            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
-            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
-              <small>${itemsList}</small>
-            </div>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
+            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
           <td style="white-space: nowrap;">
             <button class="success" style="width: auto; padding: 8px 12px; margin-bottom: 5px;" onclick="updateOrderStatus('${o.firestoreId}', 'approved')">Onayla</button><br>
@@ -1127,18 +1098,14 @@
 
         return `<tr>
           <td>
-            <strong>Sipariş Kodu:</strong> ${o.id} <br>
-            <strong>Tarih:</strong> ${o.date} <br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
-            <strong>Adres:</strong> ${o.customer.address} <br>
-            <strong>Ödeme:</strong> ${o.payment} <br>
-            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
-            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
-              <small>${itemsList}</small>
-            </div>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
+            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
           <td style="white-space: nowrap;">
-            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi İşaretle</button>
+            <button class="info" style="width: auto; padding: 8px 12px;" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')">Teslim Edildi</button>
           </td>
         </tr>`;
       }).join('');
@@ -1166,15 +1133,11 @@
 
         return `<tr>
           <td>
-            <strong>Sipariş Kodu:</strong> ${o.id} <br>
-            <strong>Tarih:</strong> ${o.date} <br>
-            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone}) <br>
-            <strong>Adres:</strong> ${o.customer.address} <br>
-            <strong>Ödeme:</strong> ${o.payment} <br>
-            <strong>Toplam Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span> <br>
-            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;">
-              <small>${itemsList}</small>
-            </div>
+            <strong>Kod:</strong> ${o.id} | <strong>Tarih:</strong> ${o.date}<br>
+            <strong>Müşteri:</strong> ${o.customer.name} (${o.customer.phone})<br>
+            <strong>Adres:</strong> ${o.customer.address}<br>
+            <strong>Ödeme:</strong> ${o.payment} | <strong>Tutar:</strong> <span style="color:var(--accent);">${o.total} TL</span>
+            <div style="margin-top: 8px; background: var(--bg-card); padding: 8px; border-radius: 6px;"><small>${itemsList}</small></div>
           </td>
           <td><span style="color: var(--success); font-weight: bold;">Tamamlandı</span></td>
         </tr>`;
@@ -1188,20 +1151,18 @@
     }
 
     window.cancelOrderAdmin = async function(firestoreId) {
-      if (confirm('Bu siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecektir.')) {
-        const order = window.orders.find(o => o.firestoreId === firestoreId);
-        if (order) {
-          for (let item of order.items) {
-            const p = window.products.find(prod => prod.id === item.id);
-            if (p) {
-              p.stock += item.quantity;
-              await updateDoc(doc(db, "products", String(p.id)), { stock: p.stock });
-            }
+      if (!confirm('Bu siparişi iptal etmek istiyor musunuz? Ürünler stoğa geri eklenecektir.')) return;
+      const order = window.orders.find(o => o.firestoreId === firestoreId);
+      if (order) {
+        for (let item of order.items) {
+          const p = window.products.find(prod => prod.id === item.id);
+          if (p) {
+            await updateDoc(doc(db, "products", String(p.id)), { stock: p.stock + item.quantity });
           }
-          await deleteDoc(doc(db, "orders", firestoreId));
-          switchOrderSubTab(window.currentOrderSubTab);
-          updateNotificationBadge();
         }
+        await deleteDoc(doc(db, "orders", firestoreId));
+        switchOrderSubTab(window.currentOrderSubTab);
+        updateNotificationBadge();
       }
     }
 
@@ -1218,9 +1179,11 @@
       }
     }
 
-    // Uygulamayı başlat ve Firestore verilerini dinlemeye başla
-    initFirestoreSync();
-    showPage('home');
+    // 🚀 Başlangıç
+    seedDefaultProducts().then(() => {
+      initFirestoreSync();
+      showPage('home');
+    });
   </script>
 </body>
 </html>
