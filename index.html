@@ -16,6 +16,7 @@
       --danger: #ef4444;
       --success: #22c55e;
       --info: #3b82f6;
+      --warning: #eab308;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -99,6 +100,18 @@
     .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: var(--bg-secondary); padding: 25px; border-radius: 16px; text-align: center; max-width: 320px; width: 100%; border: 1px solid rgba(255,255,255,0.1); }
     .modal-content img { width: 180px; height: 180px; background: white; padding: 10px; border-radius: 10px; margin: 15px 0; }
+
+    /* Sipariş durumu badge'leri */
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .status-pending { background: var(--warning); color: #000; }
+    .status-approved { background: var(--info); color: #fff; }
+    .status-delivered { background: var(--success); color: #fff; }
   </style>
 </head>
 <body>
@@ -176,6 +189,29 @@
         <button onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
 
         <button class="danger" onclick="logout()">Çıkış Yap</button>
+      </div>
+
+      <!-- Siparişlerim -->
+      <div class="card">
+        <h2>📋 Siparişlerim</h2>
+        <div id="my-orders-container">
+          <p id="no-my-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Henüz siparişiniz bulunmuyor.</p>
+          <div class="admin-table-wrapper hidden" id="my-orders-table-wrapper">
+            <table class="admin-table" id="my-orders-table">
+              <thead>
+                <tr>
+                  <th>Sipariş Kodu</th>
+                  <th>Tarih</th>
+                  <th>Toplam</th>
+                  <th>Ödeme</th>
+                  <th>Durum</th>
+                  <th>Detay</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -436,18 +472,24 @@
 
     // Telefon numarasını formatlayan yardımcı fonksiyon
     function formatPhoneNumber(raw) {
-      // Sadece rakamları al
       let digits = raw.replace(/\D/g, '');
-      // Başında 0 yoksa ve 10 haneli ise başına 0 ekle (kullanıcı 5XXXXXXXXX yazmış olabilir)
       if (digits.length === 10 && digits.charAt(0) !== '0') {
         digits = '0' + digits;
       }
-      // 11 haneli olmalı ve 0 ile başlamalı
       if (digits.length === 11 && digits.charAt(0) === '0') {
-        // 05XX XXX XX XX formatında döndür
         return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
       }
-      return null; // geçersiz
+      return null;
+    }
+
+    // Durum metnini Türkçeleştir ve badge class'ı döndür
+    function getStatusInfo(status) {
+      switch(status) {
+        case 'pending': return { text: 'Onay Bekliyor', class: 'status-pending' };
+        case 'approved': return { text: 'Onaylandı', class: 'status-approved' };
+        case 'delivered': return { text: 'Teslim Edildi', class: 'status-delivered' };
+        default: return { text: status, class: '' };
+      }
     }
 
     async function seedDefaults() {
@@ -508,6 +550,10 @@
         if (window.isAdmin && !document.getElementById('admin-tab-orders').classList.contains('hidden')) {
           switchOrderSubTab(window.currentOrderSubTab);
         }
+        // Profil sayfası açıksa siparişleri güncelle
+        if (!document.getElementById('profile-page').classList.contains('hidden')) {
+          renderMyOrders();
+        }
         updateNotificationBadge();
       });
 
@@ -540,7 +586,15 @@
       if (page === 'products') renderProducts();
       if (page === 'cart') renderCart();
       if (page === 'checkout') renderCheckout();
-      if (page === 'profile') renderProfile();
+      if (page === 'profile') {
+        if (!window.currentUser) {
+          alert('Lütfen önce giriş yapın.');
+          showPage('login');
+          return;
+        }
+        renderProfile();
+        renderMyOrders();
+      }
       if (page === 'admin' && window.isAdmin) {
         switchAdminTab('orders');
       }
@@ -554,6 +608,67 @@
       } else {
         userLink.textContent = 'Giriş';
         userLink.onclick = () => showPage('login');
+      }
+    }
+
+    window.renderProfile = function() {
+      if (!window.currentUser) return;
+      document.getElementById('profile-name').textContent = window.currentUser.name || '-';
+      document.getElementById('profile-email').textContent = window.currentUser.email || '-';
+      document.getElementById('profile-phone').textContent = window.currentUser.phone || '-';
+      document.getElementById('profile-address').textContent = window.currentUser.address || '-';
+    }
+
+    window.renderMyOrders = function() {
+      if (!window.currentUser) return;
+      const myOrders = window.orders.filter(o => o.customerEmail === window.currentUser.email);
+      const tableWrapper = document.getElementById('my-orders-table-wrapper');
+      const tbody = document.querySelector('#my-orders-table tbody');
+      const noMsg = document.getElementById('no-my-orders-msg');
+
+      if (myOrders.length === 0) {
+        noMsg.classList.remove('hidden');
+        tableWrapper.classList.add('hidden');
+        return;
+      }
+
+      noMsg.classList.add('hidden');
+      tableWrapper.classList.remove('hidden');
+
+      tbody.innerHTML = myOrders.map(o => {
+        const statusInfo = getStatusInfo(o.status);
+        const dateStr = new Date(o.date).toLocaleString('tr-TR');
+        return `
+          <tr>
+            <td><strong>${o.code}</strong></td>
+            <td>${dateStr}</td>
+            <td style="color:var(--accent);">${o.total} TL</td>
+            <td>${o.paymentMethod}</td>
+            <td><span class="status-badge ${statusInfo.class}">${statusInfo.text}</span></td>
+            <td>
+              <button class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em;" onclick="toggleOrderDetail(this, '${o.firestoreId}')">📋 Detay</button>
+            </td>
+          </tr>
+          <tr id="detail-${o.firestoreId}" class="hidden" style="background: var(--bg-card);">
+            <td colspan="6">
+              <div style="display:flex; flex-direction:column; gap:4px; padding:10px;">
+                <p><strong>Ürünler:</strong></p>
+                <ul style="margin-left:20px;">
+                  ${o.items.map(i => `<li>${i.name} - ${i.quantity} adet (${i.price} TL)</li>`).join('')}
+                </ul>
+                ${o.customerLocation ? `<button class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em; margin-top:5px;" onclick="showQrModal('${o.customerName}', '${o.customerLocation}')">📍 Konum QR</button>` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.toggleOrderDetail = function(btn, firestoreId) {
+      const detailRow = document.getElementById('detail-' + firestoreId);
+      if (detailRow) {
+        detailRow.classList.toggle('hidden');
+        btn.textContent = detailRow.classList.contains('hidden') ? '📋 Detay' : '🔼 Gizle';
       }
     }
 
@@ -761,7 +876,6 @@
       const total = window.sepet.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const orderCode = 'DKP-' + Math.floor(100000 + Math.random() * 900000);
 
-      // Stok kontrolü
       for (const item of window.sepet) {
         const product = window.products.find(p => p.firestoreId === item.firestoreId);
         if (!product || product.stock < item.quantity) {
@@ -1223,13 +1337,11 @@
       const location = document.getElementById('reg-location').value;
       const address = document.getElementById('reg-address').value.trim();
 
-      // Zorunlu alanlar
       if (!name || !email || !password || !address) {
         alert('Lütfen ad soyad, e-posta, şifre ve adres alanlarını doldurun.');
         return;
       }
 
-      // Telefon zorunlu ve format kontrolü
       if (!rawPhone) {
         alert('Telefon numarası zorunludur.');
         return;
@@ -1241,7 +1353,6 @@
         return;
       }
 
-      // Telefon input'unu formatlanmış haliyle güncelle (görsel tutarlılık)
       document.getElementById('reg-phone').value = formattedPhone;
 
       const existingUser = window.usersList.find(u => u.email === email);
