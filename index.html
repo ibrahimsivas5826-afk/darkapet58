@@ -355,7 +355,7 @@
         <button onclick="showAddCategoryForm()" style="max-width: 200px;">➕ Yeni Kategori Ekle</button>
         
         <div id="add-category-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
-          <h3>Yeni Kategori Ekle</h3>
+          <h3 id="cat-form-title">Yeni Kategori Ekle</h3>
           <input type="text" id="cat-name" placeholder="Kategori Adı (Örn: Mama, Oyuncak)">
           
           <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Kategori Görseli Seç:</label>
@@ -450,6 +450,7 @@
     window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
     window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
     window.editingProductId = null;
+    window.editingCategoryFirestoreId = null;
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
 
@@ -1153,7 +1154,10 @@
           </td>
           <td><strong>${c.name}</strong></td>
           <td>
-            <button class="danger" style="padding: 4px 8px; margin: 0; font-size: 0.8em; max-width: 80px;" onclick="deleteCategory('${c.firestoreId}', '${c.name}')">Sil</button>
+            <div style="display: flex; gap: 5px;">
+              <button class="secondary" style="padding: 4px 8px; margin: 0; font-size: 0.8em;" onclick="editCategory('${c.firestoreId}')">Düzenle</button>
+              <button class="danger" style="padding: 4px 8px; margin: 0; font-size: 0.8em;" onclick="deleteCategory('${c.firestoreId}', '${c.name}')">Sil</button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -1191,6 +1195,8 @@
     }
 
     window.showAddCategoryForm = function() {
+      window.editingCategoryFirestoreId = null;
+      document.getElementById('cat-form-title').textContent = 'Yeni Kategori Ekle';
       document.getElementById('cat-name').value = '';
       document.getElementById('cat-image-data').value = '';
       document.getElementById('cat-image-preview').style.display = 'none';
@@ -1299,6 +1305,25 @@
       document.getElementById('add-product-form').classList.remove('hidden');
     }
 
+    window.editCategory = function(firestoreId) {
+      const cat = window.categories.find(c => c.firestoreId === firestoreId);
+      if (!cat) return;
+      window.editingCategoryFirestoreId = firestoreId;
+      document.getElementById('cat-form-title').textContent = 'Kategoriyi Düzenle';
+      document.getElementById('cat-name').value = cat.name;
+      
+      const imgData = cat.image || '';
+      document.getElementById('cat-image-data').value = imgData;
+      const preview = document.getElementById('cat-image-preview');
+      if (imgData) {
+        preview.src = imgData;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+      document.getElementById('add-category-form').classList.remove('hidden');
+    }
+
     window.saveProduct = async function() {
       const name = document.getElementById('prod-name').value.trim();
       const category = document.getElementById('prod-category').value;
@@ -1335,17 +1360,24 @@
         return;
       }
 
-      if (window.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+      // İsim kontrolü (kendi adını güncellerken çakışma sayılmasın)
+      if (window.categories.some(c => c.name.toLowerCase() === name.toLowerCase() && c.firestoreId !== window.editingCategoryFirestoreId)) {
         alert('Bu isimde bir kategori zaten var.');
         return;
       }
 
       try {
-        const catId = 'cat_' + Date.now();
-        const docRef = doc(db, "categories", catId);
-        await setDoc(docRef, { id: catId, name, image });
+        if (window.editingCategoryFirestoreId) {
+          const docRef = doc(db, "categories", window.editingCategoryFirestoreId);
+          await updateDoc(docRef, { name, image });
+          alert('Kategori güncellendi.');
+        } else {
+          const catId = 'cat_' + Date.now();
+          const docRef = doc(db, "categories", catId);
+          await setDoc(docRef, { id: catId, name, image });
+          alert('Kategori başarıyla eklendi.');
+        }
         document.getElementById('add-category-form').classList.add('hidden');
-        alert('Kategori başarıyla eklendi.');
       } catch (e) {
         alert('Kategori kaydedilirken hata oluştu.');
       }
