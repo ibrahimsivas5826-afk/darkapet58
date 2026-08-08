@@ -430,6 +430,7 @@
     window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
     window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
     window.editingProductId = null;
+    window.editingCategoryId = null; // Yeni eklenen değişken
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
 
@@ -744,6 +745,15 @@
       const total = window.sepet.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const orderCode = 'DKP-' + Math.floor(100000 + Math.random() * 900000);
 
+      // Stok kontrolü
+      for (const item of window.sepet) {
+        const product = window.products.find(p => p.firestoreId === item.firestoreId);
+        if (!product || product.stock < item.quantity) {
+          alert(`${item.name} için yeterli stok kalmadı. Mevcut stok: ${product ? product.stock : 0}`);
+          return;
+        }
+      }
+
       const newOrder = {
         code: orderCode,
         customerEmail: window.currentUser.email,
@@ -958,7 +968,10 @@
           <td><img src="${c.image || PLACEHOLDER}" alt="" style="width:40px; height:40px; object-fit:cover; border-radius:6px;"></td>
           <td>${c.name}</td>
           <td>
-            <button class="danger" style="width:auto; padding:6px 10px; margin:0;" onclick="deleteCategory('${c.firestoreId}')">🗑️</button>
+            <div style="display:flex; gap:5px;">
+              <button class="secondary" style="width:auto; padding:6px 10px; margin:0;" onclick="editCategory('${c.firestoreId}')">✏️</button>
+              <button class="danger" style="width:auto; padding:6px 10px; margin:0;" onclick="deleteCategory('${c.firestoreId}')">🗑️</button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -1054,7 +1067,10 @@
       }
     }
 
+    // ----- Kategori düzenleme fonksiyonları -----
     window.showAddCategoryForm = function() {
+      window.editingCategoryId = null;
+      document.getElementById('cat-form-title').textContent = 'Yeni Kategori Ekle';
       document.getElementById('cat-name').value = '';
       document.getElementById('cat-image-data').value = '';
       document.getElementById('cat-image-preview').style.display = 'none';
@@ -1063,6 +1079,26 @@
 
     window.cancelAddCategory = function() {
       document.getElementById('add-category-form').classList.add('hidden');
+    }
+
+    window.editCategory = function(firestoreId) {
+      const cat = window.categories.find(c => c.firestoreId === firestoreId);
+      if (!cat) return;
+
+      window.editingCategoryId = firestoreId;
+      document.getElementById('cat-form-title').textContent = 'Kategori Düzenle';
+      document.getElementById('cat-name').value = cat.name;
+      document.getElementById('cat-image-data').value = cat.image || '';
+      
+      const preview = document.getElementById('cat-image-preview');
+      if (cat.image) {
+        preview.src = cat.image;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+
+      document.getElementById('add-category-form').classList.remove('hidden');
     }
 
     window.saveCategory = async function() {
@@ -1074,12 +1110,21 @@
         return;
       }
 
+      const categoryData = { name, image };
+
       try {
-        const newDocRef = doc(collection(db, "categories"));
-        await setDoc(newDocRef, { name, image });
+        if (window.editingCategoryId) {
+          // Düzenleme modu: mevcut dokümanı güncelle
+          await updateDoc(doc(db, "categories", window.editingCategoryId), categoryData);
+        } else {
+          // Yeni ekleme
+          const newDocRef = doc(collection(db, "categories"));
+          await setDoc(newDocRef, categoryData);
+        }
         cancelAddCategory();
       } catch (err) {
         console.error("Kategori kaydedilemedi:", err);
+        alert('Kayıt sırasında hata oluştu.');
       }
     }
 
@@ -1091,6 +1136,7 @@
         console.error("Kategori silinemedi:", err);
       }
     }
+    // -------------------------------------------------
 
     window.handleFileSelect = function(event) {
       const file = event.target.files[0];
