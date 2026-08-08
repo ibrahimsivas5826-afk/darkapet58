@@ -112,6 +112,7 @@
     .status-pending { background: var(--warning); color: #000; }
     .status-approved { background: var(--info); color: #fff; }
     .status-delivered { background: var(--success); color: #fff; }
+    .status-cancelled { background: var(--danger); color: #fff; }
   </style>
 </head>
 <body>
@@ -205,7 +206,7 @@
                   <th>Toplam</th>
                   <th>Ödeme</th>
                   <th>Durum</th>
-                  <th>Detay</th>
+                  <th>Detay / İptal</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -488,6 +489,7 @@
         case 'pending': return { text: 'Onay Bekliyor', class: 'status-pending' };
         case 'approved': return { text: 'Onaylandı', class: 'status-approved' };
         case 'delivered': return { text: 'Teslim Edildi', class: 'status-delivered' };
+        case 'cancelled': return { text: 'İptal Edildi', class: 'status-cancelled' };
         default: return { text: status, class: '' };
       }
     }
@@ -638,6 +640,7 @@
       tbody.innerHTML = myOrders.map(o => {
         const statusInfo = getStatusInfo(o.status);
         const dateStr = new Date(o.date).toLocaleString('tr-TR');
+        const canCancel = o.status === 'pending';
         return `
           <tr>
             <td><strong>${o.code}</strong></td>
@@ -646,7 +649,10 @@
             <td>${o.paymentMethod}</td>
             <td><span class="status-badge ${statusInfo.class}">${statusInfo.text}</span></td>
             <td>
-              <button class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em;" onclick="toggleOrderDetail(this, '${o.firestoreId}')">📋 Detay</button>
+              <div style="display:flex; gap:5px; align-items:center;">
+                <button class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em;" onclick="toggleOrderDetail(this, '${o.firestoreId}')">📋 Detay</button>
+                ${canCancel ? `<button class="danger" style="width:auto; padding:4px 8px; font-size:0.8em;" onclick="cancelOrder('${o.firestoreId}')">✖ İptal</button>` : ''}
+              </div>
             </td>
           </tr>
           <tr id="detail-${o.firestoreId}" class="hidden" style="background: var(--bg-card);">
@@ -669,6 +675,41 @@
       if (detailRow) {
         detailRow.classList.toggle('hidden');
         btn.textContent = detailRow.classList.contains('hidden') ? '📋 Detay' : '🔼 Gizle';
+      }
+    }
+
+    // Kullanıcı tarafından sipariş iptali
+    window.cancelOrder = async function(firestoreId) {
+      if (!confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) return;
+      
+      const order = window.orders.find(o => o.firestoreId === firestoreId);
+      if (!order || order.status !== 'pending') {
+        alert('Bu sipariş iptal edilemez.');
+        return;
+      }
+
+      try {
+        const batch = writeBatch(db);
+
+        // Stokları geri ekle
+        for (const item of order.items) {
+          const product = window.products.find(p => p.firestoreId === item.firestoreId);
+          if (product) {
+            const newStock = product.stock + item.quantity;
+            const prodRef = doc(db, "products", product.firestoreId);
+            batch.update(prodRef, { stock: newStock });
+          }
+        }
+
+        // Sipariş durumunu iptal olarak güncelle
+        const orderRef = doc(db, "orders", firestoreId);
+        batch.update(orderRef, { status: 'cancelled' });
+
+        await batch.commit();
+        alert('Siparişiniz iptal edildi.');
+      } catch (err) {
+        console.error("İptal hatası:", err);
+        alert('İptal sırasında bir hata oluştu.');
       }
     }
 
