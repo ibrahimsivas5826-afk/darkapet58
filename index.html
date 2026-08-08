@@ -1,4 +1,792 @@
-filtered = window.products.filter(p => p.category === window.currentCategoryFilter);
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darkapet Evcil Hayvan Ürünleri</title>
+  <style>
+    :root {
+      --bg-main: #121212;
+      --bg-card: #1e1e1e;
+      --text-main: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --accent: #ff6b00;
+      --accent-hover: #e05e00;
+      --danger: #ff4d4d;
+      --success: #28a745;
+      --info: #17a2b8;
+      --border: #333333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background-color: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    nav {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    nav button, .btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    nav button:hover, .btn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+      flex: 1;
+      width: 100%;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Ürün & Kategori Kartları */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .card, .product-card, .category-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .category-card {
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .category-card:hover, .product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .product-img, .category-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background-color: #2a2a2a;
+    }
+
+    .category-img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+    }
+
+    h3, h4 {
+      margin-bottom: 8px;
+    }
+
+    .price {
+      color: var(--accent);
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .stock {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .stock-low {
+      color: var(--danger);
+      font-weight: bold;
+    }
+
+    /* Sepet & Formlar */
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 1rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    button.full-width {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button.full-width:hover {
+      background-color: var(--accent-hover);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background-color: var(--bg-card);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+    }
+
+    .badge {
+      background-color: var(--accent);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      vertical-align: top;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo" onclick="showPage('home')">Darkapet</div>
+    <nav>
+      <button onclick="showPage('home')">Ana Sayfa</button>
+      <button onclick="showPage('products')">Ürünler</button>
+      <button onclick="showPage('cart')">Sepet <span id="cart-count" class="badge">0</span></button>
+      <div id="auth-nav">
+        <button onclick="showPage('login')">Giriş / Kayıt</button>
+      </div>
+      <div id="admin-nav" class="hidden">
+        <button onclick="showPage('admin')" style="color:var(--accent); font-weight:bold;">Yönetim Paneli <span id="notification-badge" class="badge" style="display:none;">0</span></button>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container">
+
+    <!-- ANA SAYFA -->
+    <div id="page-home" class="page active">
+      <div style="text-align: center; padding: 40px 0;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 10px; color: var(--accent);">Darkapet'e Hoş Geldiniz</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem;">Sevimli dostlarınız için en kaliteliler burada.</p>
+      </div>
+      <h3 style="margin-top: 20px;">Kategoriler</h3>
+      <div id="home-categories" class="grid">
+        <!-- Kategoriler dinamik yüklenecek -->
+      </div>
+    </div>
+
+    <!-- ÜRÜNLER SAYFASI -->
+    <div id="page-products" class="page">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 id="products-title">Tüm Ürünler</h2>
+        <button class="secondary" onclick="filterByCategory(null)" style="padding: 6px 12px; font-size: 0.9rem;">Filtreyi Kaldır</button>
+      </div>
+      <div id="products-grid" class="grid">
+        <!-- Ürünler dinamik yüklenecek -->
+      </div>
+    </div>
+
+    <!-- SEPET SAYFASI -->
+    <div id="page-cart" class="page">
+      <h2>Sepetim</h2>
+      <div id="empty-cart-msg" style="color: var(--text-muted); margin-top: 20px;">Sepetiniz boş.</div>
+      <div id="cart-items" style="margin-top: 20px;"></div>
+      <div id="cart-summary" style="margin-top: 20px; background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border);">
+        <h3>Toplam: <span id="cart-total">0</span> TL</h3>
+        <div style="margin-top: 15px;">
+          <label style="color:var(--text-muted); display:block; margin-bottom:5px;">Ödeme Yöntemi:</label>
+          <select id="payment-method" class="form-control" style="margin-bottom: 15px;">
+            <option value="cash">Kapıda Nakit</option>
+            <option value="pos">Kapıda POS (Kartla Ödeme)</option>
+          </select>
+          <div id="address-select" style="margin-bottom: 15px; font-size: 0.95rem; color: var(--text-muted);"></div>
+          <button id="checkout-btn" class="full-width" onclick="placeOrder()" disabled>Siparişi Tamamla</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SİPARİŞ BAŞARILI SAYFASI -->
+    <div id="page-order-success" class="page" style="text-align: center; padding: 50px 0;">
+      <h2 style="color: var(--success); margin-bottom: 15px;">Siparişiniz Alındı!</h2>
+      <p style="color: var(--text-muted); margin-bottom: 25px;">Siparişiniz başarıyla oluşturuldu ve yöneticiye iletildi.</p>
+      <button class="btn-primary" onclick="showPage('home')">Ana Sayfaya Dön</button>
+    </div>
+
+    <!-- GİRİŞ / KAYIT SAYFASI -->
+    <div id="page-login" class="page" style="max-width: 400px; margin: 40px auto;">
+      <div id="login-form">
+        <h2 style="margin-bottom: 20px; text-align: center;">Giriş Yap</h2>
+        <div class="form-group">
+          <label>E-posta</label>
+          <input type="email" id="login-email" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Şifre</label>
+          <div style="position:relative;">
+            <input type="password" id="login-password" class="form-control" style="padding-right:40px;">
+            <button type="button" onclick="togglePassword('login-password', this)" style="position:absolute; right:5px; top:5px; background:none; border:none; color:var(--text-main); cursor:pointer; padding:5px;">👁️</button>
+          </div>
+        </div>
+        <button class="full-width" onclick="login()">Giriş Yap</button>
+        <p style="text-align: center; margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
+          Hesabın yok mu? <a href="#" onclick="toggleForms()" style="color: var(--accent);">Kayıt Ol</a>
+        </p>
+        <div style="text-align: center; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 15px;">
+          <a href="#" onclick="showPage('admin-login')" style="color: var(--text-muted); font-size: 0.85rem;">Yönetici Girişi</a>
+        </div>
+      </div>
+
+      <div id="register-form" class="hidden">
+        <h2 style="margin-bottom: 20px; text-align: center;">Kayıt Ol</h2>
+        <div class="form-group">
+          <label>Ad Soyad</label>
+          <input type="text" id="reg-name" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>E-posta</label>
+          <input type="email" id="reg-email" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Telefon</label>
+          <input type="text" id="reg-phone" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Şifre</label>
+          <div style="position:relative;">
+            <input type="password" id="reg-password" class="form-control" style="padding-right:40px;">
+            <button type="button" onclick="togglePassword('reg-password', this)" style="position:absolute; right:5px; top:5px; background:none; border:none; color:var(--text-main); cursor:pointer; padding:5px;">👁️</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Adres Tarifi</label>
+          <textarea id="reg-address" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Konum (GPS)</label>
+          <div style="display:flex; gap:10px;">
+            <input type="text" id="reg-location" class="form-control" placeholder="Konum al butonuna basın" readonly>
+            <button type="button" class="secondary" onclick="getLocation()" style="white-space:nowrap; padding:0 12px; background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); border-radius:6px; cursor:pointer;">Konum Al</button>
+          </div>
+        </div>
+        <button class="full-width" onclick="register()">Kayıt Ol</button>
+        <p style="text-align: center; margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
+          Zaten hesabın var mı? <a href="#" onclick="toggleForms()" style="color: var(--accent);">Giriş Yap</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- KULLANICI PROFİLİ -->
+    <div id="page-profile" class="page" style="max-width: 500px; margin: 20px auto;">
+      <h2>Hesabım</h2>
+      <div style="background: var(--bg-card); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-top: 20px;">
+        <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
+        <p style="margin-top: 10px;"><strong>E-posta:</strong> <span id="profile-email"></span></p>
+        <p style="margin-top: 10px;"><strong>Telefon:</strong> <span id="profile-phone"></span></p>
+        <p style="margin-top: 10px;"><strong>Adres:</strong> <span id="profile-address"></span></p>
+        
+        <h4 style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 15px;">Şifre Değiştir</h4>
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Mevcut Şifre</label>
+          <input type="password" id="old-password" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Yeni Şifre</label>
+          <input type="password" id="new-password" class="form-control">
+        </div>
+        <button class="btn-primary" onclick="changePassword()" style="padding: 10px 15px; border-radius: 6px; border:none; cursor:pointer;">Şifreyi Güncelle</button>
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+        <button onclick="showPage('home')" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">Ana Sayfaya Dön</button>
+        <button onclick="logout()" style="background:var(--danger); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Çıkış Yap</button>
+      </div>
+    </div>
+
+    <!-- YÖNETİCİ GİRİŞİ -->
+    <div id="page-admin-login" class="page" style="max-width: 400px; margin: 40px auto;">
+      <h2 style="margin-bottom: 20px; text-align: center;">Yönetici Girişi</h2>
+      <div class="form-group">
+        <label>Yönetici Kullanıcı Adı</label>
+        <input type="text" id="admin-username" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Şifre</label>
+        <input type="password" id="admin-password" class="form-control">
+      </div>
+      <button class="full-width" onclick="adminLogin()">Yönetici Girişi Yap</button>
+    </div>
+
+    <!-- YÖNETİM PANELİ -->
+    <div id="page-admin" class="page">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+        <h2>Yönetim Paneli</h2>
+        <button onclick="logoutAdmin()" style="background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Yönetici Çıkış</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button class="btn-primary" onclick="switchAdminTab('orders')" id="tab-btn-orders">Siparişler</button>
+        <button onclick="switchAdminTab('products')" id="tab-btn-products" class="secondary" style="background:var(--bg-card); border:1px solid var(--border);">Ürün Yönetimi</button>
+        <button onclick="switchAdminTab('categories')" id="tab-btn-categories" class="secondary" style="background:var(--bg-card); border:1px solid var(--border);">Kategori Yönetimi</button>
+        <button onclick="switchAdminTab('users')" id="tab-btn-users" class="secondary" style="background:var(--bg-card); border:1px solid var(--border);">Kullanıcılar</button>
+      </div>
+
+      <!-- SİPARİŞLER SEKMESİ -->
+      <div id="admin-tab-orders" class="admin-tab-content">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <button onclick="switchAdminOrderSubTab('pending')" id="sub-tab-pending" class="btn-primary" style="padding: 6px 12px; font-size: 0.9rem;">Bekleyenler</button>
+          <button onclick="switchAdminOrderSubTab('approved')" id="sub-tab-approved" class="secondary" style="background:var(--bg-card); border:1px solid var(--border); padding: 6px 12px; font-size: 0.9rem;">Onaylananlar</button>
+          <button onclick="switchAdminOrderSubTab('delivered')" id="sub-tab-delivered" class="secondary" style="background:var(--bg-card); border:1px solid var(--border); padding: 6px 12px; font-size: 0.9rem;">Teslim Edilenler</button>
+        </div>
+
+        <!-- Bekleyen Siparişler -->
+        <div id="sub-content-pending" class="order-sub-content">
+          <div id="no-orders-msg" style="color:var(--text-muted);">Bekleyen sipariş bulunmuyor.</div>
+          <table id="orders-table" class="hidden">
+            <thead>
+              <tr>
+                <th>Sipariş Detayları</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Onaylanan Siparişler -->
+        <div id="sub-content-approved" class="order-sub-content hidden">
+          <div id="no-approved-orders-msg" style="color:var(--text-muted);">Onaylanan sipariş bulunmuyor.</div>
+          <table id="approved-orders-table" class="hidden">
+            <thead>
+              <tr>
+                <th>Sipariş Detayları</th>
+                <th>İşlem</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Teslim Edilen Siparişler -->
+        <div id="sub-content-delivered" class="order-sub-content hidden">
+          <div id="no-delivered-orders-msg" style="color:var(--text-muted);">Teslim edilen sipariş bulunmuyor.</div>
+          <table id="delivered-orders-table" class="hidden">
+            <thead>
+              <tr>
+                <th>Sipariş Detayları</th>
+                <th>Durum</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ÜRÜN YÖNETİMİ SEKMESİ -->
+      <div id="admin-tab-products" class="admin-tab-content hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3>Ürünler</h3>
+          <button class="btn-primary" onclick="showAddProductForm()" style="padding: 6px 12px; font-size: 0.9rem;">+ Yeni Ürün Ekle</button>
+        </div>
+
+        <!-- Ürün Ekleme/Düzenleme Formu -->
+        <div id="add-product-form" class="hidden" style="background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+          <h4 id="form-title" style="margin-bottom: 10px;">Yeni Ürün Ekle</h4>
+          <div class="form-group">
+            <label>Ürün Adı</label>
+            <input type="text" id="prod-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="prod-category" class="form-control"></select>
+          </div>
+          <div class="form-group">
+            <label>Fiyat (TL)</label>
+            <input type="number" id="prod-price" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Stok Adedi</label>
+            <input type="number" id="prod-stock" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Ürün Görseli</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button type="button" class="secondary" onclick="openCamera()" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); padding:8px 12px; border-radius:6px; cursor:pointer;">📸 Fotoğraf Çek / Yükle</button>
+              <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFileSelect(event)">
+            </div>
+            <input type="hidden" id="prod-image-data">
+            <img id="image-preview" style="max-width: 100px; max-height: 100px; margin-top: 10px; display: none; border-radius: 6px; object-fit: cover;">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="saveProduct()">Kaydet</button>
+            <button class="secondary" onclick="cancelAddProduct()" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); padding:8px 15px; border-radius:6px; cursor:pointer;">İptal</button>
+          </div>
+        </div>
+
+        <table id="admin-product-table">
+          <thead>
+            <tr>
+              <th>Ürün</th>
+              <th>Kategori</th>
+              <th>Fiyat</th>
+              <th>Stok</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- KATEGORİ YÖNETİMİ SEKMESİ -->
+      <div id="admin-tab-categories" class="admin-tab-content hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3>Kategoriler</h3>
+          <button class="btn-primary" onclick="showAddCategoryForm()" style="padding: 6px 12px; font-size: 0.9rem;">+ Yeni Kategori Ekle</button>
+        </div>
+
+        <!-- Kategori Ekleme/Düzenleme Formu -->
+        <div id="add-category-form" class="hidden" style="background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 20px;">
+          <h4 id="cat-form-title" style="margin-bottom: 10px;">Yeni Kategori Ekle</h4>
+          <div class="form-group">
+            <label>Kategori Adı</label>
+            <input type="text" id="cat-name" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Kategori Görseli</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button type="button" class="secondary" onclick="document.getElementById('cat-camera-input').click()" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); padding:8px 12px; border-radius:6px; cursor:pointer;">📸 Görsel Seç</button>
+              <input type="file" id="cat-camera-input" accept="image/*" style="display:none;" onchange="handleCatFileSelect(event)">
+            </div>
+            <input type="hidden" id="cat-image-data">
+            <img id="cat-image-preview" style="max-width: 80px; max-height: 80px; margin-top: 10px; display: none; border-radius: 50%; object-fit: cover;">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="saveCategory()">Kaydet</button>
+            <button class="secondary" onclick="cancelAddCategory()" style="background:var(--bg-card); border:1px solid var(--border); color:var(--text-main); padding:8px 15px; border-radius:6px; cursor:pointer;">İptal</button>
+          </div>
+        </div>
+
+        <table id="admin-category-table">
+          <thead>
+            <tr>
+              <th>Görsel</th>
+              <th>Kategori Adı</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- KULLANICILAR SEKMESİ -->
+      <div id="admin-tab-users" class="admin-tab-content hidden">
+        <h3 style="margin-bottom: 15px;">Kayıtlı Kullanıcılar</h3>
+        <table id="admin-users-table">
+          <thead>
+            <tr>
+              <th>Ad Soyad</th>
+              <th>E-posta</th>
+              <th>Telefon</th>
+              <th>Adres</th>
+              <th>Konum</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Konum QR Modal -->
+  <div id="qr-modal" class="modal hidden" onclick="closeQrModal(event)">
+    <div class="modal-content">
+      <h3 id="qr-modal-customer">Müşteri Konumu</h3>
+      <p id="qr-modal-coords" style="font-size:0.85rem; color:var(--text-muted); margin:10px 0;"></p>
+      <div style="background:white; padding:10px; display:inline-block; border-radius:6px;">
+        <img id="qr-code-img" src="" alt="QR Kod" style="display:block;">
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:10px;">Telefonunuzla taratarak haritada açabilirsiniz.</p>
+    </div>
+  </div>
+
+  <!-- Firebase SDK entegrasyonu (Modüler v9/v10) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDummyKeyForDarkapetStore12345",
+      authDomain: "darkapet-store.firebaseapp.com",
+      projectId: "darkapet-store",
+      storageBucket: "darkapet-store.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:abcdef"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    window.db = db;
+
+    const PLACEHOLDER = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+
+    window.categories = [
+      { firestoreId: 'cat-1', name: 'Kedi Maması', image: '' },
+      { firestoreId: 'cat-2', name: 'Köpek Maması', image: '' },
+      { firestoreId: 'cat-3', name: 'Kuş & Kemirgen', image: '' },
+      { firestoreId: 'cat-4', name: 'Aksesuar & Oyuncak', image: '' }
+    ];
+
+    window.products = [
+      { firestoreId: 'prod-1', name: 'Pro Plan Kedi Maması 3kg', category: 'Kedi Maması', price: 450, stock: 15, image: '' },
+      { firestoreId: 'prod-2', name: 'Royal Canin Köpek Maması 4kg', category: 'Köpek Maması', price: 600, stock: 8, image: '' },
+      { firestoreId: 'prod-3', name: 'Lux Kedi Oyuncak Olta', category: 'Aksesuar & Oyuncak', price: 75, stock: 3, image: '' }
+    ];
+
+    window.usersList = [];
+    window.orders = [];
+    window.sepet = JSON.parse(localStorage.getItem('darkapet_sepet')) || [];
+    window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
+    window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
+    window.currentCategoryFilter = null;
+    window.editingProductId = null;
+    window.editingCategoryId = null;
+
+    window.seedDefaults = async function() {
+      try {
+        const catSnap = await getDocs(collection(db, "categories"));
+        if (catSnap.empty) {
+          for (let c of window.categories) {
+            await setDoc(doc(db, "categories", c.firestoreId), { name: c.name, image: c.image });
+          }
+        }
+        const prodSnap = await getDocs(collection(db, "products"));
+        if (prodSnap.empty) {
+          for (let p of window.products) {
+            await setDoc(doc(db, "products", p.firestoreId), { name: p.name, category: p.category, price: p.price, stock: p.stock, image: p.image });
+          }
+        }
+      } catch (e) {
+        console.log("Seed uyarısı:", e);
+      }
+    }
+
+    function initFirestoreSync() {
+      onSnapshot(collection(db, "categories"), (snapshot) => {
+        window.categories = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+        renderHomeCategories();
+        renderAdminCategories();
+        updateCategorySelectOptions();
+      });
+
+      onSnapshot(collection(db, "products"), (snapshot) => {
+        window.products = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+        renderProducts();
+        renderAdminTable();
+        updateCartCount();
+      });
+
+      onSnapshot(collection(db, "users"), (snapshot) => {
+        window.usersList = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+        renderAdminUsers();
+      });
+
+      onSnapshot(collection(db, "orders"), (snapshot) => {
+        window.orders = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+        updateNotificationBadge();
+        if (window.isAdmin) {
+          renderAdminOrders('pending');
+          renderAdminOrders('approved');
+          renderAdminOrders('delivered');
+        }
+      });
+    }
+
+    window.showPage = function(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('page-' + pageId);
+      if (target) target.classList.add('active');
+
+      if (pageId === 'home') renderHomeCategories();
+      if (pageId === 'products') renderProducts();
+      if (pageId === 'cart') renderCart();
+      if (pageId === 'profile') renderProfile();
+      if (pageId === 'admin') {
+        if (!window.isAdmin) {
+          showPage('admin-login');
+          return;
+        }
+        renderAdminOrders('pending');
+        renderAdminTable();
+        renderAdminCategories();
+        renderAdminUsers();
+      }
+
+      updateAuthNav();
+    }
+
+    window.updateAuthNav = function() {
+      const authNav = document.getElementById('auth-nav');
+      const adminNav = document.getElementById('admin-nav');
+
+      if (window.currentUser) {
+        authNav.innerHTML = `<button onclick="showPage('profile')" style="color:var(--accent); font-weight:bold;">${window.currentUser.name.split(' ')[0]}</button>`;
+      } else {
+        authNav.innerHTML = `<button onclick="showPage('login')">Giriş / Kayıt</button>`;
+      }
+
+      if (window.isAdmin) {
+        adminNav.classList.remove('hidden');
+      } else {
+        adminNav.classList.add('hidden');
+      }
+    }
+
+    window.saveCart = function() {
+      localStorage.setItem('darkapet_sepet', JSON.stringify(window.sepet));
+    }
+
+    window.renderHomeCategories = function() {
+      const container = document.getElementById('home-categories');
+      if (!container) return;
+      container.innerHTML = window.categories.map(c => `
+        <div class="category-card" onclick="filterByCategory('${c.name}')">
+          <img src="${c.image || PLACEHOLDER}" class="category-img" alt="${c.name}">
+          <h4>${c.name}</h4>
+        </div>
+      `).join('');
+    }
+
+    window.updateCategorySelectOptions = function() {
+      const select = document.getElementById('prod-category');
+      if (!select) return;
+      select.innerHTML = window.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    }
+
+    window.renderProducts = function() {
+      const container = document.getElementById('products-grid');
+      const title = document.getElementById('products-title');
+      if (!container) return;
+
+      let filtered = window.products;
+      if (window.currentCategoryFilter) {
+        filtered = window.products.filter(p => p.category === window.currentCategoryFilter);
         title.textContent = window.currentCategoryFilter + ' Ürünleri';
       } else {
         title.textContent = 'Tüm Ürünler';
@@ -21,7 +809,7 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
             ${p.stock > 0 ? 'Sepete Ekle' : 'Tükendi'}
           </button>
         </div>
-    `).join('');
+      `).join('');
     }
 
     window.filterByCategory = function(categoryName) {
@@ -63,6 +851,13 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       const emptyMsg = document.getElementById('empty-cart-msg');
       if (!container) return;
 
+      if (window.currentUser) {
+        const addrContainer = document.getElementById('address-select');
+        if (addrContainer) {
+          addrContainer.innerHTML = `<strong>Teslimat Adresi:</strong><br>${window.currentUser.name} (${window.currentUser.phone})<br>${window.currentUser.address}`;
+        }
+      }
+
       if (window.sepet.length === 0) {
         container.innerHTML = '';
         totalEl.textContent = '0';
@@ -78,15 +873,15 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       container.innerHTML = window.sepet.map((item, index) => {
         total += item.price * item.quantity;
         return `
-          <div class="sepet-item">
+          <div class="sepet-item" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:10px; border-radius:8px; margin-bottom:10px; border:1px solid var(--border);">
             <div>
               <h4>${item.name}</h4>
               <p style="color:var(--accent);">${item.price} TL x ${item.quantity}</p>
             </div>
             <div style="display: flex; gap: 5px; align-items: center;">
-              <button class="secondary" onclick="changeQuantity(${index}, 1)" style="width:35px; height:35px; padding:0; margin:0;">+</button>
-              <button class="secondary" onclick="changeQuantity(${index}, -1)" style="width:35px; height:35px; padding:0; margin:0;">-</button>
-              <button class="danger" onclick="removeFromCart(${index})" style="width:35px; height:35px; padding:0; margin:0;">🗑️</button>
+              <button class="secondary" onclick="changeQuantity(${index}, 1)" style="width:35px; height:35px; padding:0; margin:0; background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); border-radius:4px; cursor:pointer;">+</button>
+              <button class="secondary" onclick="changeQuantity(${index}, -1)" style="width:35px; height:35px; padding:0; margin:0; background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); border-radius:4px; cursor:pointer;">-</button>
+              <button class="danger" onclick="removeFromCart(${index})" style="width:35px; height:35px; padding:0; margin:0; background:var(--danger); border:none; color:white; border-radius:4px; cursor:pointer;">🗑️</button>
             </div>
           </div>
         `;
@@ -111,22 +906,13 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       updateCartCount();
     }
 
-    window.renderCheckout = function() {
-      const addrContainer = document.getElementById('address-select');
+    window.placeOrder = async function() {
       if (!window.currentUser) {
         alert('Sipariş vermek için lütfen giriş yapın.');
         showPage('login');
         return;
       }
-      addrContainer.innerHTML = `
-        <strong>Teslimat Adresi:</strong><br>
-        ${window.currentUser.name} (${window.currentUser.phone})<br>
-        ${window.currentUser.address}
-      `;
-    }
-
-    window.placeOrder = async function() {
-      if (!window.currentUser || window.sepet.length === 0) return;
+      if (window.sepet.length === 0) return;
 
       const paymentMethod = document.getElementById('payment-method').value;
       const total = window.sepet.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -140,7 +926,7 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
         items: window.sepet,
         total: total,
         paymentMethod: paymentMethod === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
-        status: 'pending', // pending, approved, delivered
+        status: 'pending',
         date: new Date().toISOString()
       };
 
@@ -148,7 +934,6 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
         const docRef = doc(collection(db, "orders"));
         await setDoc(docRef, newOrder);
 
-        // Stokları düşür
         const batch = writeBatch(db);
         for (const item of window.sepet) {
           const productRef = doc(db, "products", item.firestoreId);
@@ -167,12 +952,9 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       }
     }
 
-    // Kimlik doğrulama işlemleri
     window.toggleForms = function() {
-      const loginForm = document.getElementById('login-form');
-      const regForm = document.getElementById('register-form');
-      loginForm.classList.toggle('hidden');
-      regForm.classList.toggle('hidden');
+      document.getElementById('login-form').classList.toggle('hidden');
+      document.getElementById('register-form').classList.toggle('hidden');
     }
 
     window.togglePassword = function(id, btn) {
@@ -194,12 +976,10 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
             document.getElementById('reg-location').value = coords;
             alert('Konum başarıyla alındı!');
           },
-          (error) => {
-            alert('Konum alınamadı. Lütfen tarayıcı izinlerini kontrol edin.');
-          }
+          () => { alert('Konum alınamadı.'); }
         );
       } else {
-        alert('Tarayıcınız konum servislerini desteklemiyor.');
+        alert('Tarayıcınız konum desteklemiyor.');
       }
     }
 
@@ -216,16 +996,7 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
         return;
       }
 
-      const existing = window.usersList.find(u => u.email === email);
-      if (existing) {
-        alert('Bu e-posta adresi ile zaten kayıt olunmuş.');
-        return;
-      }
-
-      const newUser = {
-        name, email, phone, password, location, address
-      };
-
+      const newUser = { name, email, phone, password, location, address };
       try {
         const docRef = doc(collection(db, "users"));
         await setDoc(docRef, newUser);
@@ -234,7 +1005,6 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
         alert('Kayıt başarılı!');
         showPage('profile');
       } catch (e) {
-        console.error(e);
         alert('Kayıt olurken hata oluştu.');
       }
     }
@@ -242,7 +1012,6 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
     window.login = function() {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value;
-
       const user = window.usersList.find(u => u.email === email && u.password === password);
       if (user) {
         window.currentUser = user;
@@ -275,21 +1044,14 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
     window.changePassword = async function() {
       const oldPass = document.getElementById('old-password').value;
       const newPass = document.getElementById('new-password').value;
-
       if (oldPass !== window.currentUser.password) {
         alert('Mevcut şifreniz yanlış!');
         return;
       }
-      if (!newPass || newPass.length < 4) {
-        alert('Yeni şifre en az 4 karakter olmalıdır.');
-        return;
-      }
-
       try {
         const userDoc = window.usersList.find(u => u.email === window.currentUser.email);
         if (userDoc) {
-          const docRef = doc(db, "users", userDoc.firestoreId);
-          await updateDoc(docRef, { password: newPass });
+          await updateDoc(doc(db, "users", userDoc.firestoreId), { password: newPass });
           window.currentUser.password = newPass;
           localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
           alert('Şifreniz güncellendi!');
@@ -297,16 +1059,12 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
           document.getElementById('new-password').value = '';
         }
       } catch (e) {
-        console.error(e);
         alert('Şifre güncellenirken hata oluştu.');
       }
     }
 
-    // Admin Girişi
     window.adminLogin = function() {
-      const u = document.getElementById('admin-username').value;
-      const p = document.getElementById('admin-password').value;
-      if (u === 'admin' && p === 'dark123') {
+      if (document.getElementById('admin-username').value === 'admin' && document.getElementById('admin-password').value === 'dark123') {
         window.isAdmin = true;
         localStorage.setItem('darkapet_admin', JSON.stringify(true));
         showPage('admin');
@@ -319,108 +1077,99 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       window.isAdmin = false;
       localStorage.removeItem('darkapet_admin');
       showPage('home');
-      alert('Yönetici oturumu kapatıldı.');
+    }
+
+    window.switchAdminTab = function(tabName) {
+      ['orders', 'products', 'categories', 'users'].forEach(t => {
+        document.getElementById('admin-tab-' + t).classList.add('hidden');
+        const btn = document.getElementById('tab-btn-' + t);
+        btn.className = 'secondary';
+        btn.style.background = 'var(--bg-card)';
+        btn.style.border = '1px solid var(--border)';
+      });
+      document.getElementById('admin-tab-' + tabName).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-btn-' + tabName);
+      activeBtn.className = 'btn-primary';
+      activeBtn.style.border = 'none';
+    }
+
+    window.switchAdminOrderSubTab = function(subTab) {
+      ['pending', 'approved', 'delivered'].forEach(s => {
+        document.getElementById('sub-content-' + s).classList.add('hidden');
+        const btn = document.getElementById('sub-tab-' + s);
+        btn.className = 'secondary';
+        btn.style.background = 'var(--bg-card)';
+        btn.style.border = '1px solid var(--border)';
+      });
+      document.getElementById('sub-content-' + subTab).classList.remove('hidden');
+      const activeBtn = document.getElementById('sub-tab-' + subTab);
+      activeBtn.className = 'btn-primary';
+      activeBtn.style.border = 'none';
+      renderAdminOrders(subTab);
     }
 
     window.updateNotificationBadge = function() {
       const badge = document.getElementById('notification-badge');
       if (!badge) return;
-      const pendingCount = window.orders.filter(o => o.status === 'pending').length;
-      if (pendingCount > 0) {
-        badge.textContent = pendingCount;
-        badge.style.display = 'block';
-      } else {
-        badge.style.display = 'none';
-      }
+      const count = window.orders.filter(o => o.status === 'pending').length;
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline-block' : 'none';
     }
 
-    // Admin Siparişleri Render
     window.renderAdminOrders = function(subTab) {
-      let filteredOrders = [];
-      let tableId = '';
-      let msgId = '';
-
-      if (subTab === 'pending') {
-        filteredOrders = window.orders.filter(o => o.status === 'pending');
-        tableId = 'orders-table';
-        msgId = 'no-orders-msg';
-      } else if (subTab === 'approved') {
-        filteredOrders = window.orders.filter(o => o.status === 'approved');
-        tableId = 'approved-orders-table';
-        msgId = 'no-approved-orders-msg';
-      } else if (subTab === 'delivered') {
-        filteredOrders = window.orders.filter(o => o.status === 'delivered');
-        tableId = 'delivered-orders-table';
-        msgId = 'no-delivered-orders-msg';
-      }
-
+      let filtered = window.orders.filter(o => o.status === subTab);
+      const tableId = subTab === 'pending' ? 'orders-table' : (subTab === 'approved' ? 'approved-orders-table' : 'delivered-orders-table');
+      const msgId = subTab === 'pending' ? 'no-orders-msg' : (subTab === 'approved' ? 'no-approved-orders-msg' : 'no-delivered-orders-msg');
       const table = document.getElementById(tableId);
       const msg = document.getElementById(msgId);
       if (!table) return;
 
-      if (filteredOrders.length === 0) {
+      if (filtered.length === 0) {
         table.classList.add('hidden');
         msg.style.display = 'block';
         return;
       }
-
       table.classList.remove('hidden');
       msg.style.display = 'none';
 
-      const tbody = table.querySelector('tbody');
-      tbody.innerHTML = filteredOrders.map(o => {
-        const itemsList = o.items.map(i => `${i.name} (x${i.quantity})`).join(', ');
-        const dateStr = new Date(o.date).toLocaleString('tr-TR');
-        return `
-          <tr>
-            <td>
-              <strong>${o.customerName}</strong> (${o.customerPhone})<br>
-              <span style="color:var(--text-muted); font-size:0.85em;">${o.customerAddress}</span><br>
-              ${o.customerLocation ? `<button class="secondary" onclick="showQrModal('${o.customerName}', '${o.customerLocation}')" style="padding:4px 8px; font-size:0.75em; width:auto; margin:4px 0;">📍 Konum QR</button>` : ''}
-              <div style="margin-top:5px; color:var(--accent);">Ürünler: ${itemsList}</div>
-              <div style="font-weight:bold; margin-top:3px;">Toplam: ${o.total} TL (${o.paymentMethod})</div>
-              <div style="font-size:0.75em; color:var(--text-muted);">${dateStr}</div>
-            </td>
-            <td>
-              ${o.status === 'pending' ? `<button class="success" onclick="updateOrderStatus('${o.firestoreId}', 'approved')" style="padding:8px 12px; font-size:0.85em;">Onayla</button>` : ''}
-              ${o.status === 'approved' ? `<button class="info" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')" style="padding:8px 12px; font-size:0.85em;">Teslim Et</button>` : ''}
-              ${o.status === 'delivered' ? `<span style="color:var(--success); font-weight:bold;">Tamamlandı</span>` : ''}
-            </td>
-          </tr>
-        `;
-      }).join('');
+      table.querySelector('tbody').innerHTML = filtered.map(o => `
+        <tr>
+          <td>
+            <strong>${o.customerName}</strong> (${o.customerPhone})<br>
+            <span style="color:var(--text-muted); font-size:0.85em;">${o.customerAddress}</span><br>
+            ${o.customerLocation ? `<button class="secondary" onclick="showQrModal('${o.customerName}', '${o.customerLocation}')" style="padding:4px 8px; font-size:0.75em; width:auto; margin:4px 0; background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); border-radius:4px; cursor:pointer;">📍 Konum QR</button>` : ''}
+            <div style="margin-top:5px; color:var(--accent);">Ürünler: ${o.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}</div>
+            <div style="font-weight:bold; margin-top:3px;">Toplam: ${o.total} TL (${o.paymentMethod})</div>
+          </td>
+          <td>
+            ${o.status === 'pending' ? `<button class="btn-primary" onclick="updateOrderStatus('${o.firestoreId}', 'approved')" style="padding:6px 10px; font-size:0.85rem;">Onayla</button>` : ''}
+            ${o.status === 'approved' ? `<button class="btn-primary" onclick="updateOrderStatus('${o.firestoreId}', 'delivered')" style="background:var(--info); padding:6px 10px; font-size:0.85rem;">Teslim Et</button>` : ''}
+            ${o.status === 'delivered' ? `<span style="color:var(--success); font-weight:bold;">Tamamlandı</span>` : ''}
+          </td>
+        </tr>
+      `).join('');
     }
 
-    window.updateOrderStatus = async function(firestoreId, newStatus) {
-      try {
-        const docRef = doc(db, "orders", firestoreId);
-        await updateDoc(docRef, { status: newStatus });
-      } catch (e) {
-        console.error(e);
-        alert('Sipariş durumu güncellenirken hata oluştu.');
-      }
+    window.updateOrderStatus = async function(firestoreId, status) {
+      await updateDoc(doc(db, "orders", firestoreId), { status });
     }
 
-    window.showQrModal = function(customerName, coords) {
-      document.getElementById('qr-modal-customer').textContent = customerName;
+    window.showQrModal = function(name, coords) {
+      document.getElementById('qr-modal-customer').textContent = name;
       document.getElementById('qr-modal-coords').textContent = coords;
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
-      document.getElementById('qr-code-img').src = qrUrl;
+      document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent('https://maps.google.com/?q=' + coords)}`;
       document.getElementById('qr-modal').classList.remove('hidden');
     }
 
     window.closeQrModal = function(e) {
-      if (e.target.id === 'qr-modal') {
-        document.getElementById('qr-modal').classList.add('hidden');
-      }
+      if (e.target.id === 'qr-modal') document.getElementById('qr-modal').classList.add('hidden');
     }
 
     // Ürün Yönetimi
     window.renderAdminTable = function() {
       const table = document.getElementById('admin-product-table');
       if (!table) return;
-      const tbody = table.querySelector('tbody');
-      tbody.innerHTML = window.products.map(p => `
+      table.querySelector('tbody').innerHTML = window.products.map(p => `
         <tr>
           <td>
             <div style="display:flex; align-items:center; gap:10px;">
@@ -432,8 +1181,8 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
           <td>${p.price} TL</td>
           <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock}</td>
           <td>
-            <button class="secondary" onclick="editProduct('${p.firestoreId}')" style="padding:6px 10px; font-size:0.8em; width:auto; margin:0;">Düzenle</button>
-            <button class="danger" onclick="deleteProduct('${p.firestoreId}')" style="padding:6px 10px; font-size:0.8em; width:auto; margin:0;">Sil</button>
+            <button class="secondary" onclick="editProduct('${p.firestoreId}')" style="padding:6px 10px; font-size:0.8em; background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); border-radius:4px; cursor:pointer;">Düzenle</button>
+            <button class="danger" onclick="deleteProduct('${p.firestoreId}')" style="padding:6px 10px; font-size:0.8em; background:var(--danger); border:none; color:white; border-radius:4px; cursor:pointer;">Sil</button>
           </td>
         </tr>
       `).join('');
@@ -511,32 +1260,23 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
       }
 
       const productData = { name, category, price, stock, image };
-
       try {
         if (window.editingProductId) {
-          const docRef = doc(db, "products", window.editingProductId);
-          await updateDoc(docRef, productData);
+          await updateDoc(doc(db, "products", window.editingProductId), productData);
         } else {
-          const docRef = doc(collection(db, "products"));
-          await setDoc(docRef, productData);
+          await setDoc(doc(collection(db, "products")), productData);
         }
         cancelAddProduct();
         renderAdminTable();
       } catch (e) {
-        console.error(e);
         alert('Ürün kaydedilirken hata oluştu.');
       }
     }
 
     window.deleteProduct = async function(firestoreId) {
       if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
-        try {
-          await deleteDoc(doc(db, "products", firestoreId));
-          renderAdminTable();
-        } catch (e) {
-          console.error(e);
-          alert('Ürün silinirken hata oluştu.');
-        }
+        await deleteDoc(doc(db, "products", firestoreId));
+        renderAdminTable();
       }
     }
 
@@ -544,20 +1284,17 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
     window.renderAdminCategories = function() {
       const table = document.getElementById('admin-category-table');
       if (!table) return;
-      const tbody = table.querySelector('tbody');
-      tbody.innerHTML = window.categories.map(c => `
+      table.querySelector('tbody').innerHTML = window.categories.map(c => `
         <tr>
           <td><img src="${c.image || PLACEHOLDER}" style="width:40px; height:40px; object-fit:cover; border-radius:6px;"></td>
           <td><strong>${c.name}</strong></td>
           <td>
-            <button class="secondary" onclick="editCategory('${c.firestoreId}')" style="padding:6px 10px; font-size:0.8em; width:auto; margin:0;">Düzenle</button>
-            <button class="danger" onclick="deleteCategory('${c.firestoreId}')" style="padding:6px 10px; font-size:0.8em; width:auto; margin:0;">Sil</button>
+            <button class="secondary" onclick="editCategory('${c.firestoreId}')" style="padding:6px 10px; font-size:0.8em; background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); border-radius:4px; cursor:pointer;">Düzenle</button>
+            <button class="danger" onclick="deleteCategory('${c.firestoreId}')" style="padding:6px 10px; font-size:0.8em; background:var(--danger); border:none; color:white; border-radius:4px; cursor:pointer;">Sil</button>
           </td>
         </tr>
       `).join('');
     }
-
-    window.editingCategoryId = null;
 
     window.showAddCategoryForm = function() {
       window.editingCategoryId = null;
@@ -610,54 +1347,41 @@ filtered = window.products.filter(p => p.category === window.currentCategoryFilt
     window.saveCategory = async function() {
       const name = document.getElementById('cat-name').value.trim();
       const image = document.getElementById('cat-image-data').value;
-
       if (!name) {
         alert('Lütfen kategori adını girin.');
         return;
       }
-
       const categoryData = { name, image };
-
       try {
         if (window.editingCategoryId) {
-          const docRef = doc(db, "categories", window.editingCategoryId);
-          await updateDoc(docRef, categoryData);
+          await updateDoc(doc(db, "categories", window.editingCategoryId), categoryData);
         } else {
-          const docRef = doc(collection(db, "categories"));
-          await setDoc(docRef, categoryData);
+          await setDoc(doc(collection(db, "categories")), categoryData);
         }
         cancelAddCategory();
         renderAdminCategories();
       } catch (e) {
-        console.error(e);
         alert('Kategori kaydedilirken hata oluştu.');
       }
     }
 
     window.deleteCategory = async function(firestoreId) {
       if (confirm('Bu kategoriyi silmek istediğinize emin misiniz?')) {
-        try {
-          await deleteDoc(doc(db, "categories", firestoreId));
-          renderAdminCategories();
-        } catch (e) {
-          console.error(e);
-          alert('Kategori silinirken hata oluştu.');
-        }
+        await deleteDoc(doc(db, "categories", firestoreId));
+        renderAdminCategories();
       }
     }
 
-    // Kullanıcılar Yönetimi
     window.renderAdminUsers = function() {
       const table = document.getElementById('admin-users-table');
       if (!table) return;
-      const tbody = table.querySelector('tbody');
-      tbody.innerHTML = window.usersList.map(u => `
+      table.querySelector('tbody').innerHTML = window.usersList.map(u => `
         <tr>
           <td><strong>${u.name}</strong></td>
           <td>${u.email}</td>
           <td>${u.phone}</td>
           <td>${u.address}</td>
-          <td>${u.location ? `<span style="color:var(--success);">Var</span>` : '<span style="color:var(--text-muted);">Yok</span>'}</td>
+          <td>${u.location ? '<span style="color:var(--success);">Var</span>' : '<span style="color:var(--text-muted);">Yok</span>'}</td>
         </tr>
       `).join('');
     }
