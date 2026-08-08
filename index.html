@@ -430,9 +430,25 @@
     window.currentUser = JSON.parse(localStorage.getItem('darkapet_user')) || null;
     window.isAdmin = JSON.parse(localStorage.getItem('darkapet_admin')) || false;
     window.editingProductId = null;
-    window.editingCategoryId = null; // Yeni eklenen değişken
+    window.editingCategoryId = null;
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
+
+    // Telefon numarasını formatlayan yardımcı fonksiyon
+    function formatPhoneNumber(raw) {
+      // Sadece rakamları al
+      let digits = raw.replace(/\D/g, '');
+      // Başında 0 yoksa ve 10 haneli ise başına 0 ekle (kullanıcı 5XXXXXXXXX yazmış olabilir)
+      if (digits.length === 10 && digits.charAt(0) !== '0') {
+        digits = '0' + digits;
+      }
+      // 11 haneli olmalı ve 0 ile başlamalı
+      if (digits.length === 11 && digits.charAt(0) === '0') {
+        // 05XX XXX XX XX formatında döndür
+        return digits.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+      }
+      return null; // geçersiz
+    }
 
     async function seedDefaults() {
       const pSnap = await getDocs(collection(db, "products"));
@@ -1067,7 +1083,6 @@
       }
     }
 
-    // ----- Kategori düzenleme fonksiyonları -----
     window.showAddCategoryForm = function() {
       window.editingCategoryId = null;
       document.getElementById('cat-form-title').textContent = 'Yeni Kategori Ekle';
@@ -1114,10 +1129,8 @@
 
       try {
         if (window.editingCategoryId) {
-          // Düzenleme modu: mevcut dokümanı güncelle
           await updateDoc(doc(db, "categories", window.editingCategoryId), categoryData);
         } else {
-          // Yeni ekleme
           const newDocRef = doc(collection(db, "categories"));
           await setDoc(newDocRef, categoryData);
         }
@@ -1136,7 +1149,6 @@
         console.error("Kategori silinemedi:", err);
       }
     }
-    // -------------------------------------------------
 
     window.handleFileSelect = function(event) {
       const file = event.target.files[0];
@@ -1206,15 +1218,31 @@
     window.register = async function() {
       const name = document.getElementById('reg-name').value.trim();
       const email = document.getElementById('reg-email').value.trim();
-      const phone = document.getElementById('reg-phone').value.trim();
+      const rawPhone = document.getElementById('reg-phone').value.trim();
       const password = document.getElementById('reg-password').value;
       const location = document.getElementById('reg-location').value;
       const address = document.getElementById('reg-address').value.trim();
 
+      // Zorunlu alanlar
       if (!name || !email || !password || !address) {
-        alert('Lütfen zorunlu alanları doldurun.');
+        alert('Lütfen ad soyad, e-posta, şifre ve adres alanlarını doldurun.');
         return;
       }
+
+      // Telefon zorunlu ve format kontrolü
+      if (!rawPhone) {
+        alert('Telefon numarası zorunludur.');
+        return;
+      }
+
+      const formattedPhone = formatPhoneNumber(rawPhone);
+      if (!formattedPhone) {
+        alert('Telefon numarası geçerli değil. Lütfen 05XX XXX XX XX formatında girin.');
+        return;
+      }
+
+      // Telefon input'unu formatlanmış haliyle güncelle (görsel tutarlılık)
+      document.getElementById('reg-phone').value = formattedPhone;
 
       const existingUser = window.usersList.find(u => u.email === email);
       if (existingUser) {
@@ -1222,7 +1250,7 @@
         return;
       }
 
-      const newUser = { name, email, phone, password, location, address };
+      const newUser = { name, email, phone: formattedPhone, password, location, address };
 
       try {
         const docRef = doc(collection(db, "users"));
