@@ -67,9 +67,10 @@
     .order-subtab-btn:hover:not(.active) { background: var(--bg-card); color: var(--text-main); }
 
     .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; margin-top: 20px; }
-    .category-card { background: var(--bg-card); border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid rgba(255,255,255,0.05); }
+    .category-card { background: var(--bg-card); border-radius: 12px; padding: 15px 10px; text-align: center; cursor: pointer; transition: transform 0.2s, background 0.2s; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .category-card:hover { transform: translateY(-3px); background: #475569; border-color: var(--accent); }
-    .category-card span { font-size: 2em; display: block; margin-bottom: 8px; }
+    .category-card img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; background: var(--bg-primary); }
+    .category-card span.emoji-icon { font-size: 2em; display: block; margin-bottom: 8px; }
     .category-card h4 { color: var(--text-main); font-size: 0.95em; }
 
     .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
@@ -91,6 +92,7 @@
     .stock-low { color: var(--danger); font-weight: bold; }
 
     .image-preview { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: var(--bg-primary); margin: 10px 0; display: none; }
+    .cat-image-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; background: var(--bg-primary); margin: 10px 0; display: none; }
     .upload-buttons { display: flex; gap: 10px; }
     .upload-buttons button { flex: 1; }
 
@@ -124,24 +126,7 @@
         <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 1em;">Darkapet kaliteli ürünleri kapınıza getirir. Kapıda nakit veya POS ile güvenli ödeme imkanı.</p>
         
         <h3 style="text-align: left; font-size: 1.1em; color: var(--text-main); margin-top: 15px;">Kategoriler</h3>
-        <div class="categories-grid">
-          <div class="category-card" onclick="filterByCategory('Mama')">
-            <span>🍖</span>
-            <h4>Mama</h4>
-          </div>
-          <div class="category-card" onclick="filterByCategory('Kum')">
-            <span>🏖️</span>
-            <h4>Kum</h4>
-          </div>
-          <div class="category-card" onclick="filterByCategory('Aksesuar')">
-            <span>🎾</span>
-            <h4>Aksesuar</h4>
-          </div>
-          <div class="category-card" onclick="filterByCategory('Bakım')">
-            <span>🧴</span>
-            <h4>Bakım</h4>
-          </div>
-        </div>
+        <div class="categories-grid" id="home-categories-grid"></div>
       </div>
     </div>
 
@@ -284,6 +269,7 @@
       <div class="admin-tabs">
         <button class="admin-tab-btn active" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('products')">📦 Ürünler</button>
+        <button class="admin-tab-btn" onclick="switchAdminTab('categories')">🏷️ Kategoriler</button>
         <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
       </div>
 
@@ -336,17 +322,14 @@
           <h3 id="form-title">Yeni Ürün Ekle</h3>
           <input type="text" id="prod-name" placeholder="Ürün adı">
           <select id="prod-category">
-            <option value="Mama">Mama</option>
-            <option value="Kum">Kum</option>
-            <option value="Aksesuar">Aksesuar</option>
-            <option value="Bakım">Bakım</option>
+            <!-- Dinamik doldurulacak -->
           </select>
           <input type="number" id="prod-price" placeholder="Fiyat (TL)">
           <input type="number" id="prod-stock" placeholder="Stok adedi">
           
-          <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Ürün Görseli Seç (İstediğiniz Fotoğrafı Yükleyebilirsiniz):</label>
+          <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Ürün Görseli Seç:</label>
           <div class="upload-buttons" style="margin-top: 5px;">
-            <button type="button" class="secondary" onclick="document.getElementById('file-input').click()">📁 Galeriden / Dosyadan Seç</button>
+            <button type="button" class="secondary" onclick="document.getElementById('file-input').click()">📁 Dosyadan Seç</button>
             <button type="button" class="secondary" onclick="openCamera()">📷 Kamera</button>
           </div>
           <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFileSelect(event)">
@@ -361,6 +344,37 @@
         <div class="admin-table-wrapper">
           <table class="admin-table" id="admin-product-table">
             <thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Kategori Yönetimi Sekmesi -->
+      <div id="admin-tab-categories" class="card hidden">
+        <h2>🏷️ Kategori Yönetimi</h2>
+        <button onclick="showAddCategoryForm()" style="max-width: 200px;">➕ Yeni Kategori Ekle</button>
+        
+        <div id="add-category-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
+          <h3>Yeni Kategori Ekle</h3>
+          <input type="text" id="cat-name" placeholder="Kategori Adı (Örn: Mama, Oyuncak)">
+          
+          <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Kategori Görseli Seç:</label>
+          <div class="upload-buttons" style="margin-top: 5px;">
+            <button type="button" class="secondary" onclick="document.getElementById('cat-file-input').click()">📁 Dosyadan Seç</button>
+            <button type="button" class="secondary" onclick="document.getElementById('cat-camera-input').click()">📷 Kamera</button>
+          </div>
+          <input type="file" id="cat-file-input" accept="image/*" style="display:none;" onchange="handleCatFileSelect(event)">
+          <input type="file" id="cat-camera-input" accept="image/*" capture="environment" style="display:none;" onchange="handleCatFileSelect(event)">
+          <img id="cat-image-preview" class="cat-image-preview" alt="Önizleme">
+          <input type="hidden" id="cat-image-data" value="">
+          
+          <button onclick="saveCategory()">💾 Kategoriyi Kaydet</button>
+          <button class="secondary" onclick="cancelAddCategory()">İptal</button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table" id="admin-category-table">
+            <thead><tr><th>Görsel</th><th>Kategori Adı</th><th>İşlem</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -418,10 +432,18 @@
       { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
       { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
     ];
+
+    const defaultCategories = [
+      { id: 'cat_1', name: 'Mama', image: '' },
+      { id: 'cat_2', name: 'Kum', image: '' },
+      { id: 'cat_3', name: 'Aksesuar', image: '' },
+      { id: 'cat_4', name: 'Bakım', image: '' }
+    ];
     
     const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
 
     window.products = [];
+    window.categories = [];
     window.sepet = JSON.parse(localStorage.getItem('darkapet_cart')) || [];
     window.orders = [];
     window.usersList = [];
@@ -431,13 +453,23 @@
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
 
-    async function seedDefaultProducts() {
-      const snap = await getDocs(collection(db, "products"));
-      if (snap.empty) {
+    async function seedDefaults() {
+      const pSnap = await getDocs(collection(db, "products"));
+      if (pSnap.empty) {
         const batch = writeBatch(db);
         defaultProducts.forEach(p => {
           const docRef = doc(db, "products", String(p.id));
           batch.set(docRef, p);
+        });
+        await batch.commit();
+      }
+
+      const cSnap = await getDocs(collection(db, "categories"));
+      if (cSnap.empty) {
+        const batch = writeBatch(db);
+        defaultCategories.forEach(c => {
+          const docRef = doc(db, "categories", c.id);
+          batch.set(docRef, c);
         });
         await batch.commit();
       }
@@ -454,6 +486,18 @@
         }
         if (window.isAdmin && !document.getElementById('admin-tab-products').classList.contains('hidden')) {
           renderAdminTable();
+        }
+      });
+
+      onSnapshot(collection(db, "categories"), (snapshot) => {
+        window.categories = [];
+        snapshot.forEach((docSnap) => {
+          window.categories.push({ firestoreId: docSnap.id, ...docSnap.data() });
+        });
+        renderHomeCategories();
+        updateCategorySelectOptions();
+        if (window.isAdmin && !document.getElementById('admin-tab-categories').classList.contains('hidden')) {
+          renderAdminCategories();
         }
       });
 
@@ -496,6 +540,7 @@
       const target = document.getElementById(page + '-page');
       if (target) target.classList.remove('hidden');
 
+      if (page === 'home') renderHomeCategories();
       if (page === 'products') renderProducts();
       if (page === 'cart') renderCart();
       if (page === 'checkout') renderCheckout();
@@ -522,6 +567,29 @@
       }
     }
 
+    window.renderHomeCategories = function() {
+      const container = document.getElementById('home-categories-grid');
+      if (!container) return;
+
+      if (window.categories.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1;">Henüz kategori eklenmemiş.</p>';
+        return;
+      }
+
+      container.innerHTML = window.categories.map(c => `
+        <div class="category-card" onclick="filterByCategory('${c.name}')">
+          ${c.image ? `<img src="${c.image}" alt="${c.name}">` : `<span class="emoji-icon">📦</span>`}
+          <h4>${c.name}</h4>
+        </div>
+      `).join('');
+    }
+
+    window.updateCategorySelectOptions = function() {
+      const select = document.getElementById('prod-category');
+      if (!select) return;
+      select.innerHTML = window.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+    }
+
     window.switchAdminTab = function(tabName) {
       document.querySelectorAll('#admin-page > div[id^="admin-tab-"]').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -530,7 +598,11 @@
       const btnToActivate = document.querySelector(`.admin-tab-btn[onclick*="${tabName}"]`);
       if (btnToActivate) btnToActivate.classList.add('active');
 
-      if (tabName === 'products') renderAdminTable();
+      if (tabName === 'products') {
+        updateCategorySelectOptions();
+        renderAdminTable();
+      }
+      if (tabName === 'categories') renderAdminCategories();
       if (tabName === 'users') renderAdminUsers();
       if (tabName === 'orders') switchOrderSubTab('pending');
     }
@@ -897,12 +969,13 @@
     window.adminLogin = function() {
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value.trim();
+      
       if (user === 'admin' && pass === '1234') {
         window.isAdmin = true;
         localStorage.setItem('darkapet_admin', 'true');
         showPage('admin');
       } else {
-        alert('Yönetici bilgileri hatalı.');
+        alert('Yönetici bilgileri hatalı! Kullanıcı adı: admin, Şifre: 1234');
       }
     }
 
@@ -1069,6 +1142,23 @@
       `).join('');
     }
 
+    window.renderAdminCategories = function() {
+      const tbody = document.querySelector('#admin-category-table tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = window.categories.map(c => `
+        <tr>
+          <td>
+            <img src="${c.image || PLACEHOLDER}" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;">
+          </td>
+          <td><strong>${c.name}</strong></td>
+          <td>
+            <button class="danger" style="padding: 4px 8px; margin: 0; font-size: 0.8em; max-width: 80px;" onclick="deleteCategory('${c.firestoreId}', '${c.name}')">Sil</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
     window.renderAdminUsers = function() {
       const tbody = document.querySelector('#admin-users-table tbody');
       if (!tbody) return;
@@ -1090,7 +1180,7 @@
       document.getElementById('prod-name').value = '';
       document.getElementById('prod-price').value = '';
       document.getElementById('prod-stock').value = '';
-      document.getElementById('prod-category').value = 'Mama';
+      updateCategorySelectOptions();
       document.getElementById('prod-image-data').value = '';
       document.getElementById('image-preview').style.display = 'none';
       document.getElementById('add-product-form').classList.remove('hidden');
@@ -1100,7 +1190,17 @@
       document.getElementById('add-product-form').classList.add('hidden');
     }
 
-    // Görseli sıkıştırıp optimize eden performanslı yükleyici
+    window.showAddCategoryForm = function() {
+      document.getElementById('cat-name').value = '';
+      document.getElementById('cat-image-data').value = '';
+      document.getElementById('cat-image-preview').style.display = 'none';
+      document.getElementById('add-category-form').classList.remove('hidden');
+    }
+
+    window.cancelAddCategory = function() {
+      document.getElementById('add-category-form').classList.add('hidden');
+    }
+
     window.handleFileSelect = function(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1112,20 +1212,13 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          
           const MAX_WIDTH = 800;
           const MAX_HEIGHT = 800;
 
           if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
+            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
           } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
+            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
           }
 
           canvas.width = width;
@@ -1133,11 +1226,44 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Performans için sıkıştırılmış JPEG/WebP formatı (0.7 kalite oranı)
           const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-
           document.getElementById('prod-image-data').value = optimizedBase64;
           const preview = document.getElementById('image-preview');
+          preview.src = optimizedBase64;
+          preview.style.display = 'block';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    window.handleCatFileSelect = function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 400;
+
+          if (width > height) {
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+          } else {
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const optimizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          document.getElementById('cat-image-data').value = optimizedBase64;
+          const preview = document.getElementById('cat-image-preview');
           preview.src = optimizedBase64;
           preview.style.display = 'block';
         };
@@ -1156,6 +1282,7 @@
       window.editingProductId = firestoreId;
       document.getElementById('form-title').textContent = 'Ürünü Düzenle';
       document.getElementById('prod-name').value = prod.name;
+      updateCategorySelectOptions();
       document.getElementById('prod-category').value = prod.category;
       document.getElementById('prod-price').value = prod.price;
       document.getElementById('prod-stock').value = prod.stock;
@@ -1199,12 +1326,48 @@
       }
     }
 
+    window.saveCategory = async function() {
+      const name = document.getElementById('cat-name').value.trim();
+      const image = document.getElementById('cat-image-data').value;
+
+      if (!name) {
+        alert('Lütfen kategori adını girin.');
+        return;
+      }
+
+      if (window.categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+        alert('Bu isimde bir kategori zaten var.');
+        return;
+      }
+
+      try {
+        const catId = 'cat_' + Date.now();
+        const docRef = doc(db, "categories", catId);
+        await setDoc(docRef, { id: catId, name, image });
+        document.getElementById('add-category-form').classList.add('hidden');
+        alert('Kategori başarıyla eklendi.');
+      } catch (e) {
+        alert('Kategori kaydedilirken hata oluştu.');
+      }
+    }
+
     window.deleteProduct = async function(firestoreId) {
       if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
         try {
           await deleteDoc(doc(db, "products", firestoreId));
         } catch (e) {
           alert('Ürün silinirken hata oluştu.');
+        }
+      }
+    }
+
+    window.deleteCategory = async function(firestoreId, catName) {
+      if (confirm(`"${catName}" kategorisini silmek istediğinize emin misiniz?`)) {
+        try {
+          await deleteDoc(doc(db, "categories", firestoreId));
+          alert('Kategori silindi.');
+        } catch (e) {
+          alert('Kategori silinirken hata oluştu.');
         }
       }
     }
@@ -1221,7 +1384,7 @@
     }
 
     window.onload = async function() {
-      await seedDefaultProducts();
+      await seedDefaults();
       initFirestoreSync();
       if (window.isAdmin) {
         document.getElementById('admin-link').style.display = 'inline-block';
