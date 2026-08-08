@@ -237,9 +237,9 @@
     <div id="admin-login-page" class="hidden">
       <div class="card" style="max-width: 400px; margin: auto;">
         <h2>Yönetici Girişi</h2>
-        <input type="text" id="admin-username" placeholder="Kullanıcı adı">
+        <input type="text" id="admin-username" placeholder="Kullanıcı adı" value="admin">
         <div class="password-container">
-          <input type="password" id="admin-password" placeholder="Şifre">
+          <input type="password" id="admin-password" placeholder="Şifre" value="dark123">
           <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
         </div>
         <button onclick="adminLogin()">Panele Git</button>
@@ -1217,7 +1217,7 @@
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value;
 
-      if (user === 'admin' && pass === 'darka123') {
+      if (user === 'admin' && pass === 'dark123') {
         window.isAdmin = true;
         localStorage.setItem('darkapet_admin', JSON.stringify(true));
         showPage('admin');
