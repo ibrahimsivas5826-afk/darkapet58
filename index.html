@@ -494,6 +494,15 @@
       }
     }
 
+    // Şifre hashleme (SHA-256)
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     async function seedDefaults() {
       const pSnap = await getDocs(collection(db, "products"));
       if (pSnap.empty) {
@@ -513,6 +522,14 @@
           batch.set(docRef, c);
         });
         await batch.commit();
+      }
+
+      // Admin hesabını oluştur (yoksa)
+      const aSnap = await getDocs(collection(db, "admins"));
+      if (aSnap.empty) {
+        const hashedPassword = await hashPassword("dark123");
+        const adminDoc = doc(collection(db, "admins"));
+        await setDoc(adminDoc, { username: "admin", password: hashedPassword });
       }
     }
 
@@ -1439,16 +1456,32 @@
       showPage('home');
     }
 
-    window.adminLogin = function() {
+    // Admin girişi artık Firestore'daki hash'li bilgilerle doğrulanır
+    window.adminLogin = async function() {
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value;
+      const hashedPass = await hashPassword(pass);
 
-      if (user === 'admin' && pass === 'dark123') {
-        window.isAdmin = true;
-        localStorage.setItem('darkapet_admin', JSON.stringify(true));
-        showPage('admin');
-      } else {
-        alert('Yönetici adı veya şifresi hatalı.');
+      try {
+        const adminSnap = await getDocs(collection(db, "admins"));
+        let adminFound = false;
+        adminSnap.forEach((docSnap) => {
+          const admin = docSnap.data();
+          if (admin.username === user && admin.password === hashedPass) {
+            adminFound = true;
+          }
+        });
+
+        if (adminFound) {
+          window.isAdmin = true;
+          localStorage.setItem('darkapet_admin', JSON.stringify(true));
+          showPage('admin');
+        } else {
+          alert('Yönetici adı veya şifresi hatalı.');
+        }
+      } catch (err) {
+        console.error("Admin giriş hatası:", err);
+        alert('Giriş sırasında bir hata oluştu.');
       }
     }
 
