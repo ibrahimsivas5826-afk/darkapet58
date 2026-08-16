@@ -101,14 +101,7 @@
     .modal-content { background: var(--bg-secondary); padding: 25px; border-radius: 16px; text-align: center; max-width: 320px; width: 100%; border: 1px solid rgba(255,255,255,0.1); }
     .modal-content img { width: 180px; height: 180px; background: white; padding: 10px; border-radius: 10px; margin: 15px 0; }
 
-    /* Sipariş durumu badge'leri */
-    .status-badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 0.8em;
-      font-weight: bold;
-    }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }
     .status-pending { background: var(--warning); color: #000; }
     .status-approved { background: var(--info); color: #fff; }
     .status-delivered { background: var(--success); color: #fff; }
@@ -132,18 +125,15 @@
   </header>
 
   <div class="container">
-    <!-- Ana Sayfa -->
     <div id="home-page">
       <div class="card" style="text-align: center; padding: 30px 20px;">
         <h2 style="font-size: 1.8em; margin-bottom: 10px;">🐶 Sevimli Dostlarınız İçin En İyisi 🐱</h2>
         <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 1em;">Darkapet kaliteli ürünleri kapınıza getirir. Kapıda nakit veya POS ile güvenli ödeme imkanı.</p>
-        
         <h3 style="text-align: left; font-size: 1.1em; color: var(--text-main); margin-top: 15px;">Kategoriler</h3>
         <div class="categories-grid" id="home-categories-grid"></div>
       </div>
     </div>
 
-    <!-- Ürünler -->
     <div id="products-page" class="hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 id="products-title" style="margin: 0;">Tüm Ürünler</h2>
@@ -152,7 +142,6 @@
       <div class="product-grid" id="product-container"></div>
     </div>
 
-    <!-- Sepet -->
     <div id="cart-page" class="hidden">
       <h2>Sepetim</h2>
       <div class="card">
@@ -165,7 +154,6 @@
       </div>
     </div>
 
-    <!-- Kullanıcı Profili -->
     <div id="profile-page" class="hidden">
       <div class="card">
         <h2>👤 Kullanıcı Profili</h2>
@@ -175,9 +163,7 @@
           <p><strong>Telefon:</strong> <span id="profile-phone"></span></p>
           <p><strong>Adres:</strong> <span id="profile-address"></span></p>
         </div>
-
         <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 20px 0;">
-
         <h3>Şifre Değiştir</h3>
         <div class="password-container">
           <input type="password" id="old-password" placeholder="Mevcut Şifre">
@@ -188,27 +174,15 @@
           <button type="button" class="toggle-password" onclick="togglePassword('new-password', this)">👁️</button>
         </div>
         <button type="button" onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
-
         <button type="button" class="danger" onclick="logout()">Çıkış Yap</button>
       </div>
-
-      <!-- Siparişlerim -->
       <div class="card">
         <h2>📋 Siparişlerim</h2>
         <div id="my-orders-container">
           <p id="no-my-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Henüz siparişiniz bulunmuyor.</p>
           <div class="admin-table-wrapper hidden" id="my-orders-table-wrapper">
             <table class="admin-table" id="my-orders-table">
-              <thead>
-                <tr>
-                  <th>Sipariş Kodu</th>
-                  <th>Tarih</th>
-                  <th>Toplam</th>
-                  <th>Ödeme</th>
-                  <th>Durum</th>
-                  <th>Detay / İptal</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Sipariş Kodu</th><th>Tarih</th><th>Toplam</th><th>Ödeme</th><th>Durum</th><th>Detay / İptal</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -216,7 +190,6 @@
       </div>
     </div>
 
-    <!-- Üye Giriş / Kayıt -->
     <div id="login-page" class="hidden">
       <div class="card" id="login-form">
         <h2>Üye Girişi</h2>
@@ -228,7 +201,6 @@
         <button type="button" onclick="login()">Giriş Yap</button>
         <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Hesabınız yok mu? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Üye Ol</a></p>
       </div>
-      
       <div class="card hidden" id="register-form">
         <h2>Yeni Üyelik</h2>
         <input type="text" id="reg-name" placeholder="Ad Soyad">
@@ -246,7 +218,6 @@
       </div>
     </div>
 
-    <!-- Sipariş Onay -->
     <div id="checkout-page" class="hidden">
       <div class="card">
         <h2>Sipariş Onayı</h2>
@@ -261,7 +232,6 @@
       </div>
     </div>
 
-    <!-- Sipariş Başarılı -->
     <div id="order-success-page" class="hidden">
       <div class="card" style="text-align: center; padding: 40px 20px;">
         <h2 style="color: var(--success); font-size: 2em; margin-bottom: 15px;">🎉 Siparişiniz Alındı!</h2>
@@ -270,7 +240,6 @@
       </div>
     </div>
 
-    <!-- Admin Giriş -->
     <div id="admin-login-page" class="hidden">
       <div class="card" style="max-width: 400px; margin: auto;">
         <h2>Yönetici Girişi</h2>
@@ -283,7 +252,6 @@
       </div>
     </div>
 
-    <!-- Admin Paneli -->
     <div id="admin-page" class="hidden">
       <div class="admin-tabs">
         <button type="button" class="admin-tab-btn active" id="tab-orders" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
@@ -292,7 +260,6 @@
         <button type="button" class="admin-tab-btn" id="tab-users" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
       </div>
 
-      <!-- Siparişler Sekmesi -->
       <div id="admin-tab-orders" class="card">
         <h2>🛎️ Sipariş Yönetimi</h2>
         <div class="order-subtabs">
@@ -343,18 +310,15 @@
         </div>
       </div>
 
-      <!-- Ürün Yönetimi Sekmesi -->
       <div id="admin-tab-products" class="card hidden">
         <h2>📦 Ürün Yönetimi</h2>
         <button type="button" onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
-        
         <div id="add-product-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
           <h3 id="form-title">Yeni Ürün Ekle</h3>
           <input type="text" id="prod-name" placeholder="Ürün adı">
           <select id="prod-category"></select>
           <input type="number" id="prod-price" placeholder="Fiyat (TL)">
           <input type="number" id="prod-stock" placeholder="Stok adedi">
-          
           <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Ürün Görseli Seç:</label>
           <div class="upload-buttons" style="margin-top: 5px;">
             <button type="button" class="secondary" id="btn-file-input">📁 Dosyadan Seç</button>
@@ -364,11 +328,9 @@
           <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;">
           <img id="image-preview" class="image-preview" alt="Önizleme">
           <input type="hidden" id="prod-image-data" value="">
-          
           <button type="button" onclick="saveProduct()">💾 Kaydet</button>
           <button type="button" class="secondary" onclick="cancelAddProduct()">İptal</button>
         </div>
-
         <div class="admin-table-wrapper">
           <table class="admin-table" id="admin-product-table">
             <thead><tr><th>Ürün</th><th>Kategori</th><th>Fiyat</th><th>Stok</th><th>İşlem</th></tr></thead>
@@ -377,15 +339,12 @@
         </div>
       </div>
 
-      <!-- Kategori Yönetimi Sekmesi -->
       <div id="admin-tab-categories" class="card hidden">
         <h2>🏷️ Kategori Yönetimi</h2>
         <button type="button" onclick="showAddCategoryForm()" style="max-width: 200px;">➕ Yeni Kategori Ekle</button>
-        
         <div id="add-category-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
           <h3 id="cat-form-title">Yeni Kategori Ekle</h3>
           <input type="text" id="cat-name" placeholder="Kategori Adı (Örn: Mama, Oyuncak)">
-          
           <label style="color: var(--text-muted); font-size: 0.9em; display: block; margin-top: 10px;">Kategori Görseli Seç:</label>
           <div class="upload-buttons" style="margin-top: 5px;">
             <button type="button" class="secondary" id="btn-cat-file-input">📁 Dosyadan Seç</button>
@@ -395,11 +354,9 @@
           <input type="file" id="cat-camera-input" accept="image/*" capture="environment" style="display:none;">
           <img id="cat-image-preview" class="cat-image-preview" alt="Önizleme">
           <input type="hidden" id="cat-image-data" value="">
-          
           <button type="button" onclick="saveCategory()">💾 Kategoriyi Kaydet</button>
           <button type="button" class="secondary" onclick="cancelAddCategory()">İptal</button>
         </div>
-
         <div class="admin-table-wrapper">
           <table class="admin-table" id="admin-category-table">
             <thead><tr><th>Görsel</th><th>Kategori Adı</th><th>İşlem</th></tr></thead>
@@ -408,7 +365,6 @@
         </div>
       </div>
 
-      <!-- Kullanıcılar Sekmesi -->
       <div id="admin-tab-users" class="card hidden">
         <h2>👥 Kayıtlı Kullanıcılar</h2>
         <div class="admin-table-wrapper">
@@ -423,7 +379,6 @@
     </div>
   </div>
 
-  <!-- QR Modal -->
   <div id="qr-modal" class="modal hidden" onclick="closeQrModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
       <h3 style="color: var(--accent); margin-bottom: 10px;">Konum QR Kodu</h3>
@@ -436,7 +391,6 @@
 
   <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
 
-  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
@@ -454,4 +408,7 @@
     const db = getFirestore(app);
 
     const defaultProducts = [
-      { id: 1, name: 'Pro Plan Köpek
+      { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
+      { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
+      { id: 3, name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
+      { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'A
