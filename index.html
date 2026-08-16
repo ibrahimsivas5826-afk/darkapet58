@@ -245,7 +245,7 @@
         <h2>Yönetici Girişi</h2>
         <input type="text" id="admin-username" placeholder="Kullanıcı adı" value="admin">
         <div class="password-container">
-          <input type="password" id="admin-password" placeholder="Şifre" value="dark123">
+          <input type="password" id="admin-password" placeholder="Şifre">
           <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
         </div>
         <button type="button" onclick="adminLogin()">Panele Git</button>
@@ -461,7 +461,6 @@
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // Resmi küçültüp sıkıştır
     function compressImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -507,6 +506,7 @@
         });
         await batch.commit();
       }
+      // Admin oluşturma bölümü tamamen kaldırıldı
     }
 
     function initFirestoreSync() {
@@ -1057,9 +1057,7 @@
       const price = parseFloat(document.getElementById('prod-price').value);
       const stock = parseInt(document.getElementById('prod-stock').value);
       const image = document.getElementById('prod-image-data').value;
-
       if (!name || isNaN(price) || isNaN(stock)) { alert('Lütfen tüm alanları eksiksiz doldurun.'); return; }
-
       const productData = { name, category, price, stock, image };
       try {
         if (window.editingProductId) { await updateDoc(doc(db, "products", window.editingProductId), productData); }
@@ -1182,16 +1180,13 @@
       const password = document.getElementById('reg-password').value;
       const location = document.getElementById('reg-location').value;
       const address = document.getElementById('reg-address').value.trim();
-
       if (!name || !email || !password || !address) { alert('Lütfen ad soyad, e-posta, şifre ve adres alanlarını doldurun.'); return; }
       if (!rawPhone) { alert('Telefon numarası zorunludur.'); return; }
       const formattedPhone = formatPhoneNumber(rawPhone);
       if (!formattedPhone) { alert('Telefon numarası geçerli değil. Lütfen 05XX XXX XX XX formatında girin.'); return; }
       document.getElementById('reg-phone').value = formattedPhone;
-
       const existingUser = window.usersList.find(u => u.email === email);
       if (existingUser) { alert('Bu e-posta adresiyle kayıtlı bir hesap zaten var.'); return; }
-
       const newUser = { name, email, phone: formattedPhone, password, location, address };
       try {
         const docRef = await setDoc(doc(collection(db, "users")), newUser);
@@ -1219,23 +1214,22 @@
       showPage('home');
     }
 
+    // Admin girişi: Şifre kaynak kodda düz metin olarak GÖRÜNMEZ
     window.adminLogin = async function() {
       const user = document.getElementById('admin-username').value.trim();
       const pass = document.getElementById('admin-password').value;
       const hashedPass = await hashPassword(pass);
-      try {
-        const adminSnap = await getDocs(collection(db, "admins"));
-        let adminFound = false;
-        adminSnap.forEach((docSnap) => {
-          const admin = docSnap.data();
-          if (admin.username === user && admin.password === hashedPass) adminFound = true;
-        });
-        if (adminFound) {
-          window.isAdmin = true;
-          localStorage.setItem('darkapet_admin', JSON.stringify(true));
-          showPage('admin');
-        } else { alert('Yönetici adı veya şifresi hatalı.'); }
-      } catch (err) { console.error("Admin giriş hatası:", err); alert('Giriş sırasında bir hata oluştu.'); }
+      
+      // Hash'li şifre: "dark123" değil! Buraya kendi şifrenizin hash'ini koyun.
+      const correctHash = '19a8fe3e6b7a142f9d1d1b08cd94b1e1a2b3c4d5e6f708192030405060708090a';
+      
+      if (user === 'admin' && hashedPass === correctHash) {
+        window.isAdmin = true;
+        localStorage.setItem('darkapet_admin', JSON.stringify(true));
+        showPage('admin');
+      } else {
+        alert('Yönetici adı veya şifresi hatalı.');
+      }
     }
 
     window.logoutAdmin = function() {
