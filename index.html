@@ -243,7 +243,7 @@
     <div id="admin-login-page" class="hidden">
       <div class="card" style="max-width: 400px; margin: auto;">
         <h2>Yönetici Girişi</h2>
-        <input type="text" id="admin-username" placeholder="Kullanıcı adı" value="admin">
+        <input type="email" id="admin-email" placeholder="E-posta adresi" value="admin@darkapet.com">
         <div class="password-container">
           <input type="password" id="admin-password" placeholder="Şifre">
           <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
@@ -392,8 +392,9 @@
   <footer>© 2026 Darkapet Ltd. Şti. Tüm hakları saklıdır.</footer>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyALr-2dpQb25ozPgoN-VFiFGze5gQSyYSU",
@@ -406,6 +407,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
     const defaultProducts = [
       { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
@@ -453,14 +455,6 @@
       }
     }
 
-    async function hashPassword(password) {
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
     function compressImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -506,7 +500,6 @@
         });
         await batch.commit();
       }
-      // Admin oluşturma bölümü tamamen kaldırıldı
     }
 
     function initFirestoreSync() {
@@ -1214,28 +1207,32 @@
       showPage('home');
     }
 
-    // Admin girişi: Şifre kaynak kodda düz metin olarak GÖRÜNMEZ
+    // Admin girişi Firebase Authentication ile
     window.adminLogin = async function() {
-      const user = document.getElementById('admin-username').value.trim();
+      const email = document.getElementById('admin-email').value.trim();
       const pass = document.getElementById('admin-password').value;
-      const hashedPass = await hashPassword(pass);
       
-      // Hash'li şifre: "dark123" değil! Buraya kendi şifrenizin hash'ini koyun.
-      const correctHash = '19a8fe3e6b7a142f9d1d1b08cd94b1e1a2b3c4d5e6f708192030405060708090a';
-      
-      if (user === 'admin' && hashedPass === correctHash) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, pass);
         window.isAdmin = true;
         localStorage.setItem('darkapet_admin', JSON.stringify(true));
+        alert('Yönetici girişi başarılı!');
         showPage('admin');
-      } else {
-        alert('Yönetici adı veya şifresi hatalı.');
+      } catch (err) {
+        console.error("Admin giriş hatası:", err);
+        alert('E-posta veya şifre hatalı.');
       }
     }
 
-    window.logoutAdmin = function() {
-      window.isAdmin = false;
-      localStorage.removeItem('darkapet_admin');
-      showPage('home');
+    window.logoutAdmin = async function() {
+      try {
+        await signOut(auth);
+        window.isAdmin = false;
+        localStorage.removeItem('darkapet_admin');
+        showPage('home');
+      } catch (err) {
+        console.error("Çıkış hatası:", err);
+      }
     }
 
     window.changePassword = async function() {
@@ -1272,6 +1269,18 @@
     window.onload = async function() {
       await seedDefaults();
       initFirestoreSync();
+      
+      // Oturum kontrolü
+      onAuthStateChanged(auth, (user) => {
+        if (user && user.email === 'admin@darkapet.com') {
+          window.isAdmin = true;
+          localStorage.setItem('darkapet_admin', JSON.stringify(true));
+        } else {
+          window.isAdmin = false;
+          localStorage.removeItem('darkapet_admin');
+        }
+      });
+      
       showPage('home');
     };
   </script>
