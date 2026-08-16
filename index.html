@@ -147,7 +147,7 @@
     <div id="products-page" class="hidden">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 id="products-title" style="margin: 0;">Tüm Ürünler</h2>
-        <button class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
+        <button type="button" class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
       </div>
       <div class="product-grid" id="product-container"></div>
     </div>
@@ -160,7 +160,7 @@
         <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
           <p style="font-size: 1.2em;"><strong>Toplam: <span id="cart-total" style="color: var(--accent);">0</span> TL</strong></p>
         </div>
-        <button onclick="showPage('checkout')" id="checkout-btn" disabled style="margin-top: 20px;">Siparişi Tamamla</button>
+        <button type="button" onclick="showPage('checkout')" id="checkout-btn" disabled style="margin-top: 20px;">Siparişi Tamamla</button>
         <p id="empty-cart-msg" style="text-align: center; color: var(--text-muted); padding: 20px;">Sepetiniz henüz boş.</p>
       </div>
     </div>
@@ -187,9 +187,9 @@
           <input type="password" id="new-password" placeholder="Yeni Şifre">
           <button type="button" class="toggle-password" onclick="togglePassword('new-password', this)">👁️</button>
         </div>
-        <button onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
+        <button type="button" onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
 
-        <button class="danger" onclick="logout()">Çıkış Yap</button>
+        <button type="button" class="danger" onclick="logout()">Çıkış Yap</button>
       </div>
 
       <!-- Siparişlerim -->
@@ -225,7 +225,7 @@
           <input type="password" id="login-password" placeholder="Şifre">
           <button type="button" class="toggle-password" onclick="togglePassword('login-password', this)">👁️</button>
         </div>
-        <button onclick="login()">Giriş Yap</button>
+        <button type="button" onclick="login()">Giriş Yap</button>
         <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Hesabınız yok mu? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Üye Ol</a></p>
       </div>
       
@@ -238,10 +238,10 @@
           <input type="password" id="reg-password" placeholder="Şifre">
           <button type="button" class="toggle-password" onclick="togglePassword('reg-password', this)">👁️</button>
         </div>
-        <button onclick="getLocation()" class="secondary">📍 Konumumu Otomatik Al</button>
+        <button type="button" onclick="getLocation()" class="secondary">📍 Konumumu Otomatik Al</button>
         <input type="text" id="reg-location" placeholder="Enlem, Boylam" readonly>
         <textarea id="reg-address" placeholder="Açık adresiniz (Teslimat için zorunlu)"></textarea>
-        <button onclick="register()">Kayıt Ol</button>
+        <button type="button" onclick="register()">Kayıt Ol</button>
         <p style="margin-top: 15px; text-align: center; color: var(--text-muted);">Zaten üye misiniz? <a onclick="toggleForms()" style="color: var(--accent); text-decoration: none; cursor: pointer;">Giriş Yap</a></p>
       </div>
     </div>
@@ -256,8 +256,8 @@
           <option value="cash">Kapıda Nakit Ödeme</option>
           <option value="pos">Kapıda POS Cihazı ile Ödeme</option>
         </select>
-        <button onclick="placeOrder()" style="margin-top: 20px;">Siparişi Onayla</button>
-        <button class="secondary" onclick="showPage('cart')">Sepete Geri Dön</button>
+        <button type="button" onclick="placeOrder()" style="margin-top: 20px;">Siparişi Onayla</button>
+        <button type="button" class="secondary" onclick="showPage('cart')">Sepete Geri Dön</button>
       </div>
     </div>
 
@@ -266,7 +266,7 @@
       <div class="card" style="text-align: center; padding: 40px 20px;">
         <h2 style="color: var(--success); font-size: 2em; margin-bottom: 15px;">🎉 Siparişiniz Alındı!</h2>
         <p style="color: var(--text-muted); margin-bottom: 25px;">Siparişiniz başarıyla kaydedildi. Yönetici onayından sonra hazırlanacaktır.</p>
-        <button onclick="showPage('home')" style="max-width: 250px; margin: auto;">Ana Sayfaya Dön</button>
+        <button type="button" onclick="showPage('home')" style="max-width: 250px; margin: auto;">Ana Sayfaya Dön</button>
       </div>
     </div>
 
@@ -279,26 +279,27 @@
           <input type="password" id="admin-password" placeholder="Şifre" value="dark123">
           <button type="button" class="toggle-password" onclick="togglePassword('admin-password', this)">👁️</button>
         </div>
-        <button onclick="adminLogin()">Panele Git</button>
+        <button type="button" onclick="adminLogin()">Panele Git</button>
       </div>
     </div>
 
     <!-- Admin Paneli -->
     <div id="admin-page" class="hidden">
       <div class="admin-tabs">
-        <button class="admin-tab-btn active" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab('products')">📦 Ürünler</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab('categories')">🏷️ Kategoriler</button>
-        <button class="admin-tab-btn" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
+        <button type="button" class="admin-tab-btn active" id="tab-orders" onclick="switchAdminTab('orders')">🛎️ Siparişler</button>
+        <button type="button" class="admin-tab-btn" id="tab-products" onclick="switchAdminTab('products')">📦 Ürünler</button>
+        <button type="button" class="admin-tab-btn" id="tab-categories" onclick="switchAdminTab('categories')">🏷️ Kategoriler</button>
+        <button type="button" class="admin-tab-btn" id="tab-users" onclick="switchAdminTab('users')">👥 Kullanıcılar</button>
       </div>
 
       <!-- Siparişler Sekmesi -->
       <div id="admin-tab-orders" class="card">
         <h2>🛎️ Sipariş Yönetimi</h2>
         <div class="order-subtabs">
-          <button class="order-subtab-btn active" onclick="switchOrderSubTab('pending')">📥 Gelen</button>
-          <button class="order-subtab-btn" onclick="switchOrderSubTab('approved')">✅ Onaylanan</button>
-          <button class="order-subtab-btn" onclick="switchOrderSubTab('delivered')">🚚 Teslim</button>
+          <button type="button" class="order-subtab-btn active" id="subtab-pending" onclick="switchOrderSubTab('pending')">📥 Gelen</button>
+          <button type="button" class="order-subtab-btn" id="subtab-approved" onclick="switchOrderSubTab('approved')">✅ Onaylanan</button>
+          <button type="button" class="order-subtab-btn" id="subtab-delivered" onclick="switchOrderSubTab('delivered')">🚚 Teslim</button>
+          <button type="button" class="order-subtab-btn" id="subtab-cancelled" onclick="switchOrderSubTab('cancelled')">❌ İptal Edilenler</button>
         </div>
 
         <div id="order-subtab-pending">
@@ -325,6 +326,16 @@
           <p id="no-delivered-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">Teslim edilen sipariş yok.</p>
           <div class="admin-table-wrapper">
             <table class="admin-table hidden" id="delivered-orders-table">
+              <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="order-subtab-cancelled" class="hidden">
+          <p id="no-cancelled-orders-msg" style="color: var(--text-muted); text-align: center; padding: 15px;">İptal edilen sipariş yok.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table hidden" id="cancelled-orders-table">
               <thead><tr><th>Sipariş Bilgileri & Ürünler</th><th>İşlem</th></tr></thead>
               <tbody></tbody>
             </table>
@@ -440,4 +451,7 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db
+    const db = getFirestore(app);
+
+    const defaultProducts = [
+      { id: 1, name: 'Pro Plan Köpek
