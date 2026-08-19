@@ -157,13 +157,31 @@
     <div id="profile-page" class="hidden">
       <div class="card">
         <h2>👤 Kullanıcı Profili</h2>
-        <div style="margin-bottom: 20px; line-height: 1.6;">
-          <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
-          <p><strong>E-posta:</strong> <span id="profile-email"></span></p>
-          <p><strong>Telefon:</strong> <span id="profile-phone"></span></p>
-          <p><strong>Adres:</strong> <span id="profile-address"></span></p>
+        
+        <!-- Görüntüleme Modu -->
+        <div id="profile-view-mode">
+          <div style="margin-bottom: 20px; line-height: 1.6;">
+            <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
+            <p><strong>E-posta:</strong> <span id="profile-email"></span></p>
+            <p><strong>Telefon:</strong> <span id="profile-phone"></span></p>
+            <p><strong>Adres:</strong> <span id="profile-address"></span></p>
+          </div>
+          <button type="button" class="secondary" onclick="showProfileEditMode()">✏️ Bilgileri Düzenle</button>
         </div>
+        
+        <!-- Düzenleme Modu -->
+        <div id="profile-edit-mode" class="hidden">
+          <input type="text" id="edit-name" placeholder="Ad Soyad">
+          <input type="tel" id="edit-phone" placeholder="Telefon Numarası (05XX XXX XX XX)">
+          <textarea id="edit-address" placeholder="Açık adresiniz"></textarea>
+          <button type="button" onclick="getLocationForEdit()" class="secondary">📍 Konumumu Otomatik Al</button>
+          <input type="text" id="edit-location" placeholder="Enlem, Boylam" readonly>
+          <button type="button" onclick="saveProfileChanges()">💾 Kaydet</button>
+          <button type="button" class="secondary" onclick="cancelProfileEdit()">İptal</button>
+        </div>
+
         <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 20px 0;">
+
         <h3>Şifre Değiştir</h3>
         <div class="password-container">
           <input type="password" id="old-password" placeholder="Mevcut Şifre">
@@ -174,6 +192,7 @@
           <button type="button" class="toggle-password" onclick="togglePassword('new-password', this)">👁️</button>
         </div>
         <button type="button" onclick="changePassword()" style="margin-bottom: 20px;">Şifreyi Güncelle</button>
+
         <button type="button" class="danger" onclick="logout()">Çıkış Yap</button>
       </div>
       <div class="card">
@@ -579,6 +598,62 @@
       document.getElementById('profile-email').textContent = window.currentUser.email || '-';
       document.getElementById('profile-phone').textContent = window.currentUser.phone || '-';
       document.getElementById('profile-address').textContent = window.currentUser.address || '-';
+    }
+
+    // Profil düzenleme modları
+    window.showProfileEditMode = function() {
+      document.getElementById('profile-view-mode').classList.add('hidden');
+      document.getElementById('profile-edit-mode').classList.remove('hidden');
+      
+      document.getElementById('edit-name').value = window.currentUser.name || '';
+      document.getElementById('edit-phone').value = window.currentUser.phone || '';
+      document.getElementById('edit-address').value = window.currentUser.address || '';
+      document.getElementById('edit-location').value = window.currentUser.location || '';
+    }
+
+    window.cancelProfileEdit = function() {
+      document.getElementById('profile-edit-mode').classList.add('hidden');
+      document.getElementById('profile-view-mode').classList.remove('hidden');
+    }
+
+    window.getLocationForEdit = function() {
+      if (!navigator.geolocation) { alert('Tarayıcınız konum servislerini desteklemiyor.'); return; }
+      navigator.geolocation.getCurrentPosition(
+        (position) => { document.getElementById('edit-location').value = `${position.coords.latitude}, ${position.coords.longitude}`; },
+        () => { alert('Konum bilgisi alınamadı.'); }
+      );
+    }
+
+    window.saveProfileChanges = async function() {
+      const name = document.getElementById('edit-name').value.trim();
+      const rawPhone = document.getElementById('edit-phone').value.trim();
+      const address = document.getElementById('edit-address').value.trim();
+      const location = document.getElementById('edit-location').value;
+
+      if (!name || !address) { alert('Ad soyad ve adres alanları zorunludur.'); return; }
+      if (!rawPhone) { alert('Telefon numarası zorunludur.'); return; }
+
+      const formattedPhone = formatPhoneNumber(rawPhone);
+      if (!formattedPhone) { alert('Telefon numarası geçerli değil. Lütfen 05XX XXX XX XX formatında girin.'); return; }
+
+      try {
+        const userDoc = window.usersList.find(u => u.email === window.currentUser.email);
+        if (userDoc) {
+          const updatedData = { name, phone: formattedPhone, address, location };
+          await updateDoc(doc(db, "users", userDoc.firestoreId), updatedData);
+          
+          // Local güncelle
+          window.currentUser = { ...window.currentUser, ...updatedData };
+          localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
+          
+          alert('Bilgileriniz güncellendi.');
+          renderProfile();
+          cancelProfileEdit();
+        }
+      } catch (err) {
+        console.error("Profil güncellenemedi:", err);
+        alert('Güncelleme sırasında hata oluştu.');
+      }
     }
 
     window.renderMyOrders = function() {
