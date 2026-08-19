@@ -227,6 +227,8 @@
           <option value="cash">Kapıda Nakit Ödeme</option>
           <option value="pos">Kapıda POS Cihazı ile Ödeme</option>
         </select>
+        <label style="color: var(--text-muted); margin-top: 15px;">Sipariş Notu (Opsiyonel):</label>
+        <textarea id="order-note" placeholder="Siparişinizle ilgili notunuzu buraya yazabilirsiniz..."></textarea>
         <button type="button" onclick="placeOrder()" style="margin-top: 20px;">Siparişi Onayla</button>
         <button type="button" class="secondary" onclick="showPage('cart')">Sepete Geri Dön</button>
       </div>
@@ -618,6 +620,7 @@
               <div style="display:flex; flex-direction:column; gap:4px; padding:10px;">
                 <p><strong>Ürünler:</strong></p>
                 <ul style="margin-left:20px;">${o.items.map(i => `<li>${i.name} - ${i.quantity} adet (${i.price} TL)</li>`).join('')}</ul>
+                ${o.note ? `<p style="margin-top:8px;"><strong>Not:</strong> ${o.note}</p>` : ''}
                 ${o.customerLocation ? `<button type="button" class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em; margin-top:5px;" onclick="showQrModal('${o.customerName}', '${o.customerLocation}')">📍 Konum QR</button>` : ''}
               </div>
             </td>
@@ -832,6 +835,7 @@
     window.placeOrder = async function() {
       if (!window.currentUser || window.sepet.length === 0) return;
       const paymentMethod = document.getElementById('payment-method').value;
+      const orderNote = document.getElementById('order-note').value.trim();
       const total = window.sepet.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const orderCode = 'DKP-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -850,6 +854,7 @@
         customerPhone: window.currentUser.phone,
         customerAddress: window.currentUser.address || '',
         customerLocation: window.currentUser.location || '',
+        note: orderNote,
         items: window.sepet,
         total: total,
         paymentMethod: paymentMethod === 'cash' ? 'Kapıda Nakit' : 'Kapıda POS',
@@ -919,6 +924,7 @@
               <div style="margin-bottom:6px;"><strong>Müşteri:</strong> ${o.customerName} (${o.customerPhone})</div>
               <div style="margin-bottom:6px;"><strong>Adres:</strong> ${o.customerAddress}</div>
               <div style="margin-bottom:6px;"><strong>Ödeme:</strong> ${o.paymentMethod} | <strong>Toplam:</strong> <span style="color:var(--accent);">${o.total} TL</span></div>
+              ${o.note ? `<div style="margin-bottom:6px;"><strong>Not:</strong> ${o.note}</div>` : ''}
               <ul style="margin-left:20px; font-size:0.9em; color:var(--text-muted);">${itemsList}</ul>
               ${o.customerLocation ? `<button type="button" class="secondary" style="width:auto; padding:4px 8px; font-size:0.8em; margin-top:8px;" onclick="showQrModal('${o.customerName}', '${o.customerLocation}')">📍 Konum QR</button>` : ''}
             </td>
@@ -929,170 +935,155 @@
     }
 
     window.printOrder = function(orderCode) {
-  const order = window.orders.find(o => o.code === orderCode);
-  if (!order) return;
+      const order = window.orders.find(o => o.code === orderCode);
+      if (!order) return;
 
-  const dateStr = new Date(order.date).toLocaleString('tr-TR');
-  
-  // Termal yazıcı için 80mm (yaklaşık 302px) genişlik
-  const printWindow = window.open('', '_blank', 'width=380,height=600');
-  
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>Sipariş - ${order.code}</title>
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: 'Courier New', monospace;
-          width: 302px;
-          margin: 0 auto;
-          padding: 10px;
-          background: white;
-          color: black;
-          font-size: 12px;
-        }
-        .header {
-          text-align: center;
-          border-bottom: 2px dashed #000;
-          padding-bottom: 10px;
-          margin-bottom: 10px;
-        }
-        .header h2 {
-          font-size: 16px;
-          margin-bottom: 5px;
-        }
-        .header p {
-          font-size: 11px;
-        }
-        .info {
-          margin-bottom: 10px;
-        }
-        .info p {
-          font-size: 11px;
-          margin-bottom: 3px;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 10px;
-        }
-        th {
-          border-bottom: 1px solid #000;
-          border-top: 1px solid #000;
-          padding: 4px 0;
-          font-size: 11px;
-          text-align: left;
-        }
-        td {
-          padding: 3px 0;
-          font-size: 11px;
-          border-bottom: 1px dotted #ccc;
-        }
-        .total {
-          text-align: right;
-          font-size: 14px;
-          font-weight: bold;
-          margin: 10px 0;
-        }
-        .footer {
-          text-align: center;
-          border-top: 2px dashed #000;
-          padding-top: 10px;
-          margin-top: 10px;
-          font-size: 10px;
-        }
-        .qr-section {
-          text-align: center;
-          margin: 10px 0;
-        }
-        @media print {
-          body { width: 100%; }
-          button { display: none; }
-        }
-        .no-print {
-          margin-top: 15px;
-          text-align: center;
-        }
-        .no-print button {
-          padding: 10px 20px;
-          font-size: 14px;
-          cursor: pointer;
-          background: #f59e0b;
-          color: white;
-          border: none;
-          border-radius: 5px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h2>DARKAPET</h2>
-        <p>Evcil Hayvan Ürünleri</p>
-        <p>Tel: 05XX XXX XX XX</p>
-      </div>
+      const dateStr = new Date(order.date).toLocaleString('tr-TR');
       
-      <div class="info">
-        <p><strong>Sipariş No:</strong> ${order.code}</p>
-        <p><strong>Tarih:</strong> ${dateStr}</p>
-        <p><strong>Müşteri:</strong> ${order.customerName}</p>
-        <p><strong>Telefon:</strong> ${order.customerPhone}</p>
-        <p><strong>Adres:</strong> ${order.customerAddress}</p>
-        <p><strong>Ödeme:</strong> ${order.paymentMethod}</p>
-      </div>
+      const printWindow = window.open('', '_blank', 'width=380,height=600');
       
-      <table>
-        <thead>
-          <tr>
-            <th>Ürün</th>
-            <th style="text-align:center;">Adet</th>
-            <th style="text-align:right;">Tutar</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${order.items.map(i => `
-            <tr>
-              <td>${i.name}</td>
-              <td style="text-align:center;">${i.quantity}</td>
-              <td style="text-align:right;">${i.price * i.quantity} TL</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Sipariş - ${order.code}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: 'Courier New', monospace;
+              width: 302px;
+              margin: 0 auto;
+              padding: 10px;
+              background: white;
+              color: black;
+              font-size: 12px;
+            }
+            .header {
+              text-align: center;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .header h2 { font-size: 16px; margin-bottom: 5px; }
+            .header p { font-size: 11px; }
+            .info { margin-bottom: 10px; }
+            .info p { font-size: 11px; margin-bottom: 3px; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+            }
+            th {
+              border-bottom: 1px solid #000;
+              border-top: 1px solid #000;
+              padding: 4px 0;
+              font-size: 11px;
+              text-align: left;
+            }
+            td {
+              padding: 3px 0;
+              font-size: 11px;
+              border-bottom: 1px dotted #ccc;
+            }
+            .total {
+              text-align: right;
+              font-size: 14px;
+              font-weight: bold;
+              margin: 10px 0;
+            }
+            .footer {
+              text-align: center;
+              border-top: 2px dashed #000;
+              padding-top: 10px;
+              margin-top: 10px;
+              font-size: 10px;
+            }
+            .qr-section { text-align: center; margin: 10px 0; }
+            @media print {
+              body { width: 100%; }
+              button { display: none; }
+            }
+            .no-print {
+              margin-top: 15px;
+              text-align: center;
+            }
+            .no-print button {
+              padding: 10px 20px;
+              font-size: 14px;
+              cursor: pointer;
+              background: #f59e0b;
+              color: white;
+              border: none;
+              border-radius: 5px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h2>DARKAPET</h2>
+            <p>Evcil Hayvan Ürünleri</p>
+          </div>
+          
+          <div class="info">
+            <p><strong>Sipariş No:</strong> ${order.code}</p>
+            <p><strong>Tarih:</strong> ${dateStr}</p>
+            <p><strong>Müşteri:</strong> ${order.customerName}</p>
+            <p><strong>Telefon:</strong> ${order.customerPhone}</p>
+            <p><strong>Adres:</strong> ${order.customerAddress}</p>
+            <p><strong>Ödeme:</strong> ${order.paymentMethod}</p>
+            ${order.note ? `<p><strong>Not:</strong> ${order.note}</p>` : ''}
+          </div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Ürün</th>
+                <th style="text-align:center;">Adet</th>
+                <th style="text-align:right;">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${order.items.map(i => `
+                <tr>
+                  <td>${i.name}</td>
+                  <td style="text-align:center;">${i.quantity}</td>
+                  <td style="text-align:right;">${i.price * i.quantity} TL</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="total">TOPLAM: ${order.total} TL</div>
+          
+          ${order.customerLocation ? `
+          <div class="qr-section">
+            <p style="font-size:10px; margin-bottom:5px;">Teslimat Konumu QR</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://maps.google.com/?q=' + order.customerLocation)}" width="100" height="100">
+          </div>
+          ` : ''}
+          
+          <div class="footer">
+            <p>Teşekkür ederiz!</p>
+            <p>Darkapet © 2026</p>
+          </div>
+          
+          <div class="no-print">
+            <button onclick="window.print()">🖨️ Yazdır</button>
+          </div>
+        </body>
+        </html>
+      `);
       
-      <div class="total">TOPLAM: ${order.total} TL</div>
+      printWindow.document.close();
+      printWindow.focus();
       
-      ${order.customerLocation ? `
-      <div class="qr-section">
-        <p style="font-size:10px; margin-bottom:5px;">Teslimat Konumu QR</p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://maps.google.com/?q=' + order.customerLocation)}" width="100" height="100">
-      </div>
-      ` : ''}
-      
-      <div class="footer">
-        <p>Teşekkür ederiz!</p>
-        <p>Darkapet © 2026</p>
-      </div>
-      
-      <div class="no-print">
-        <button onclick="window.print()">🖨️ Yazdır</button>
-      </div>
-    </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-  printWindow.focus();
-  
-  // Otomatik yazdırma penceresi yüklendikten sonra
-  printWindow.onload = function() {
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
-  };
-}
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+    }
 
     window.updateOrderStatus = async function(firestoreId, newStatus) {
       try { await updateDoc(doc(db, "orders", firestoreId), { status: newStatus }); }
@@ -1347,7 +1338,6 @@
       showPage('home');
     }
 
-    // Admin girişi Firebase Authentication ile
     window.adminLogin = async function() {
       const email = document.getElementById('admin-email').value.trim();
       const pass = document.getElementById('admin-password').value;
@@ -1410,7 +1400,6 @@
       await seedDefaults();
       initFirestoreSync();
       
-      // Oturum kontrolü
       onAuthStateChanged(auth, (user) => {
         if (user && user.email === 'admin@darkapet.com') {
           window.isAdmin = true;
