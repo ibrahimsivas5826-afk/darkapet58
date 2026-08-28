@@ -57,6 +57,23 @@
     .toggle-password { position: absolute; right: 12px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2em; padding: 0; width: auto; margin: 0; }
     .toggle-password:hover { color: var(--accent); }
 
+    .search-container {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-container input {
+      padding-left: 45px;
+    }
+    .search-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2em;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
     .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; flex-wrap: wrap; }
     .admin-tab-btn { background: var(--bg-card); color: var(--text-muted); border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.95em; width: auto; margin: 0; transition: background 0.2s, color 0.2s; }
     .admin-tab-btn.active { background: var(--accent); color: var(--bg-primary); }
@@ -135,10 +152,17 @@
     </div>
 
     <div id="products-page" class="hidden">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h2 id="products-title" style="margin: 0;">Tüm Ürünler</h2>
         <button type="button" class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
       </div>
+      
+      <!-- Arama Çubuğu -->
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="product-search" placeholder="Ürün ara..." oninput="searchProducts()">
+      </div>
+      
       <div class="product-grid" id="product-container"></div>
     </div>
 
@@ -158,7 +182,6 @@
       <div class="card">
         <h2>👤 Kullanıcı Profili</h2>
         
-        <!-- Görüntüleme Modu -->
         <div id="profile-view-mode">
           <div style="margin-bottom: 20px; line-height: 1.6;">
             <p><strong>Ad Soyad:</strong> <span id="profile-name"></span></p>
@@ -169,7 +192,6 @@
           <button type="button" class="secondary" onclick="showProfileEditMode()">✏️ Bilgileri Düzenle</button>
         </div>
         
-        <!-- Düzenleme Modu -->
         <div id="profile-edit-mode" class="hidden">
           <input type="text" id="edit-name" placeholder="Ad Soyad">
           <input type="tel" id="edit-phone" placeholder="Telefon Numarası (05XX XXX XX XX)">
@@ -334,6 +356,13 @@
       <div id="admin-tab-products" class="card hidden">
         <h2>📦 Ürün Yönetimi</h2>
         <button type="button" onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
+        
+        <!-- Admin Ürün Arama -->
+        <div class="search-container" style="margin-top: 15px;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="admin-product-search" placeholder="Ürün ara..." oninput="searchAdminProducts()">
+        </div>
+        
         <div id="add-product-form" class="hidden card" style="margin-top: 15px; background: var(--bg-primary);">
           <h3 id="form-title">Yeni Ürün Ekle</h3>
           <input type="text" id="prod-name" placeholder="Ürün adı">
@@ -458,6 +487,7 @@
     window.editingCategoryId = null;
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
+    window.searchQuery = '';
 
     function formatPhoneNumber(raw) {
       let digits = raw.replace(/\D/g, '');
@@ -570,7 +600,7 @@
       if (target) target.classList.remove('hidden');
 
       if (page === 'home') renderHomeCategories();
-      if (page === 'products') renderProducts();
+      if (page === 'products') { renderProducts(); }
       if (page === 'cart') renderCart();
       if (page === 'checkout') renderCheckout();
       if (page === 'profile') {
@@ -600,11 +630,9 @@
       document.getElementById('profile-address').textContent = window.currentUser.address || '-';
     }
 
-    // Profil düzenleme modları
     window.showProfileEditMode = function() {
       document.getElementById('profile-view-mode').classList.add('hidden');
       document.getElementById('profile-edit-mode').classList.remove('hidden');
-      
       document.getElementById('edit-name').value = window.currentUser.name || '';
       document.getElementById('edit-phone').value = window.currentUser.phone || '';
       document.getElementById('edit-address').value = window.currentUser.address || '';
@@ -641,11 +669,8 @@
         if (userDoc) {
           const updatedData = { name, phone: formattedPhone, address, location };
           await updateDoc(doc(db, "users", userDoc.firestoreId), updatedData);
-          
-          // Local güncelle
           window.currentUser = { ...window.currentUser, ...updatedData };
           localStorage.setItem('darkapet_user', JSON.stringify(window.currentUser));
-          
           alert('Bilgileriniz güncellendi.');
           renderProfile();
           cancelProfileEdit();
@@ -777,6 +802,71 @@
       renderAdminOrders(subTab);
     }
 
+    // Kullanıcı ürün arama
+    window.searchProducts = function() {
+      const query = document.getElementById('product-search').value.toLowerCase().trim();
+      const container = document.getElementById('product-container');
+      const title = document.getElementById('products-title');
+      
+      let filtered = window.products;
+      
+      if (query) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(query));
+        if (title) title.textContent = `Arama: "${query}"`;
+      } else {
+        if (window.currentCategoryFilter) {
+          filtered = filtered.filter(p => p.category === window.currentCategoryFilter);
+          if (title) title.textContent = window.currentCategoryFilter + ' Ürünleri';
+        } else {
+          if (title) title.textContent = 'Tüm Ürünler';
+        }
+      }
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center; padding: 30px;">Aradığınız ürün bulunamadı.</p>';
+        return;
+      }
+      
+      container.innerHTML = filtered.map(p => `
+        <div class="product-card">
+          <div>
+            <img src="${p.image || PLACEHOLDER}" alt="${p.name}" class="product-img">
+            <h4>${p.name}</h4>
+            <div class="price">${p.price} TL</div>
+            <div class="stock">Stok: ${p.stock}</div>
+          </div>
+          <button type="button" onclick="addToCart('${p.firestoreId}')" ${p.stock <= 0 ? 'disabled style="background:var(--bg-card); color:var(--text-muted); cursor:not-allowed;"' : ''}>
+            ${p.stock > 0 ? 'Sepete Ekle' : 'Tükendi'}
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Admin ürün arama
+    window.searchAdminProducts = function() {
+      const query = document.getElementById('admin-product-search').value.toLowerCase().trim();
+      const tbody = document.querySelector('#admin-product-table tbody');
+      if (!tbody) return;
+      
+      let filtered = window.products;
+      if (query) {
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(query));
+      }
+      
+      tbody.innerHTML = filtered.map(p => `
+        <tr>
+          <td><div style="display:flex; align-items:center; gap:10px;"><img src="${p.image || PLACEHOLDER}" alt="" style="width:40px; height:40px; object-fit:cover; border-radius:6px;"><span>${p.name}</span></div></td>
+          <td>${p.category}</td>
+          <td>${p.price} TL</td>
+          <td class="${p.stock <= 5 ? 'stock-low' : ''}">${p.stock}</td>
+          <td><div style="display:flex; gap:5px;">
+            <button type="button" class="secondary" style="width:auto; padding:6px 10px; margin:0;" onclick="editProduct('${p.firestoreId}')">✏️</button>
+            <button type="button" class="danger" style="width:auto; padding:6px 10px; margin:0;" onclick="deleteProduct('${p.firestoreId}')">🗑️</button>
+          </div></td>
+        </tr>
+      `).join('');
+    }
+
     window.renderProducts = function() {
       const container = document.getElementById('product-container');
       const title = document.getElementById('products-title');
@@ -812,6 +902,7 @@
 
     window.filterByCategory = function(categoryName) {
       window.currentCategoryFilter = categoryName;
+      document.getElementById('product-search').value = '';
       showPage('products');
     }
 
