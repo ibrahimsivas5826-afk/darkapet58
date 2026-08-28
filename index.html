@@ -980,7 +980,7 @@
       `;
     }
 
-    // WhatsApp bildirim fonksiyonu
+    // WhatsApp bildirim fonksiyonu - doğrudan uygulama açılır
     window.sendWhatsAppNotification = function(orderData) {
       const adminPhone = '905461840058';
       
@@ -1003,9 +1003,16 @@
       }
       
       const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = 'https://wa.me/' + adminPhone + '?text=' + encodedMessage;
+      const mobileUrl = 'whatsapp://send?phone=' + adminPhone + '&text=' + encodedMessage;
+      const webUrl = 'https://wa.me/' + adminPhone + '?text=' + encodedMessage;
       
-      window.open(whatsappUrl, '_blank');
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        window.location.href = mobileUrl;
+      } else {
+        window.open(webUrl, '_blank');
+      }
     }
 
     window.placeOrder = async function() {
@@ -1050,7 +1057,6 @@
         batch.set(doc(collection(db, "orders")), newOrder);
         await batch.commit();
         
-        // WhatsApp bildirimi - güvenli
         try {
           sendWhatsAppNotification(newOrder);
         } catch (waErr) {
@@ -1134,73 +1140,21 @@
           <title>Sipariş - ${order.code}</title>
           <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: 'Courier New', monospace;
-              width: 302px;
-              margin: 0 auto;
-              padding: 10px;
-              background: white;
-              color: black;
-              font-size: 12px;
-            }
-            .header {
-              text-align: center;
-              border-bottom: 2px dashed #000;
-              padding-bottom: 10px;
-              margin-bottom: 10px;
-            }
+            body { font-family: 'Courier New', monospace; width: 302px; margin: 0 auto; padding: 10px; background: white; color: black; font-size: 12px; }
+            .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
             .header h2 { font-size: 16px; margin-bottom: 5px; }
             .header p { font-size: 11px; }
             .info { margin-bottom: 10px; }
             .info p { font-size: 11px; margin-bottom: 3px; }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 10px;
-            }
-            th {
-              border-bottom: 1px solid #000;
-              border-top: 1px solid #000;
-              padding: 4px 0;
-              font-size: 11px;
-              text-align: left;
-            }
-            td {
-              padding: 3px 0;
-              font-size: 11px;
-              border-bottom: 1px dotted #ccc;
-            }
-            .total {
-              text-align: right;
-              font-size: 14px;
-              font-weight: bold;
-              margin: 10px 0;
-            }
-            .footer {
-              text-align: center;
-              border-top: 2px dashed #000;
-              padding-top: 10px;
-              margin-top: 10px;
-              font-size: 10px;
-            }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+            th { border-bottom: 1px solid #000; border-top: 1px solid #000; padding: 4px 0; font-size: 11px; text-align: left; }
+            td { padding: 3px 0; font-size: 11px; border-bottom: 1px dotted #ccc; }
+            .total { text-align: right; font-size: 14px; font-weight: bold; margin: 10px 0; }
+            .footer { text-align: center; border-top: 2px dashed #000; padding-top: 10px; margin-top: 10px; font-size: 10px; }
             .qr-section { text-align: center; margin: 10px 0; }
-            @media print {
-              body { width: 100%; }
-              button { display: none; }
-            }
-            .no-print {
-              margin-top: 15px;
-              text-align: center;
-            }
-            .no-print button {
-              padding: 10px 20px;
-              font-size: 14px;
-              cursor: pointer;
-              background: #f59e0b;
-              color: white;
-              border: none;
-              border-radius: 5px;
-            }
+            @media print { body { width: 100%; } button { display: none; } }
+            .no-print { margin-top: 15px; text-align: center; }
+            .no-print button { padding: 10px 20px; font-size: 14px; cursor: pointer; background: #f59e0b; color: white; border: none; border-radius: 5px; }
           </style>
         </head>
         <body>
@@ -1208,7 +1162,6 @@
             <h2>DARKAPET</h2>
             <p>Evcil Hayvan Ürünleri</p>
           </div>
-          
           <div class="info">
             <p><strong>Sipariş No:</strong> ${order.code}</p>
             <p><strong>Tarih:</strong> ${dateStr}</p>
@@ -1218,43 +1171,14 @@
             <p><strong>Ödeme:</strong> ${order.paymentMethod}</p>
             ${order.note ? `<p><strong>Not:</strong> ${order.note}</p>` : ''}
           </div>
-          
           <table>
-            <thead>
-              <tr>
-                <th>Ürün</th>
-                <th style="text-align:center;">Adet</th>
-                <th style="text-align:right;">Tutar</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(i => `
-                <tr>
-                  <td>${i.name}</td>
-                  <td style="text-align:center;">${i.quantity}</td>
-                  <td style="text-align:right;">${i.price * i.quantity} TL</td>
-                </tr>
-              `).join('')}
-            </tbody>
+            <thead><tr><th>Ürün</th><th style="text-align:center;">Adet</th><th style="text-align:right;">Tutar</th></tr></thead>
+            <tbody>${order.items.map(i => `<tr><td>${i.name}</td><td style="text-align:center;">${i.quantity}</td><td style="text-align:right;">${i.price * i.quantity} TL</td></tr>`).join('')}</tbody>
           </table>
-          
           <div class="total">TOPLAM: ${order.total} TL</div>
-          
-          ${order.customerLocation ? `
-          <div class="qr-section">
-            <p style="font-size:10px; margin-bottom:5px;">Teslimat Konumu QR</p>
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://maps.google.com/?q=' + order.customerLocation)}" width="100" height="100">
-          </div>
-          ` : ''}
-          
-          <div class="footer">
-            <p>Teşekkür ederiz!</p>
-            <p>Darkapet © 2026</p>
-          </div>
-          
-          <div class="no-print">
-            <button onclick="window.print()">🖨️ Yazdır</button>
-          </div>
+          ${order.customerLocation ? `<div class="qr-section"><p style="font-size:10px; margin-bottom:5px;">Teslimat Konumu QR</p><img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://maps.google.com/?q=' + order.customerLocation)}" width="100" height="100"></div>` : ''}
+          <div class="footer"><p>Teşekkür ederiz!</p><p>Darkapet © 2026</p></div>
+          <div class="no-print"><button onclick="window.print()">🖨️ Yazdır</button></div>
         </body>
         </html>
       `);
@@ -1263,9 +1187,7 @@
       printWindow.focus();
       
       printWindow.onload = function() {
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
+        setTimeout(() => { printWindow.print(); }, 500);
       };
     }
 
