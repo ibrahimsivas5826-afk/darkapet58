@@ -157,7 +157,6 @@
         <button type="button" class="secondary" onclick="filterByCategory('')" style="width: auto; margin: 0; padding: 6px 12px; font-size: 0.85em;">Tümünü Göster</button>
       </div>
       
-      <!-- Arama Çubuğu -->
       <div class="search-container">
         <span class="search-icon">🔍</span>
         <input type="text" id="product-search" placeholder="Ürün ara..." oninput="searchProducts()">
@@ -357,7 +356,6 @@
         <h2>📦 Ürün Yönetimi</h2>
         <button type="button" onclick="showAddProductForm()" style="max-width: 200px;">➕ Yeni Ürün Ekle</button>
         
-        <!-- Admin Ürün Arama -->
         <div class="search-container" style="margin-top: 15px;">
           <span class="search-icon">🔍</span>
           <input type="text" id="admin-product-search" placeholder="Ürün ara..." oninput="searchAdminProducts()">
@@ -487,7 +485,6 @@
     window.editingCategoryId = null;
     window.currentCategoryFilter = '';
     window.currentOrderSubTab = 'pending';
-    window.searchQuery = '';
 
     function formatPhoneNumber(raw) {
       let digits = raw.replace(/\D/g, '');
@@ -802,7 +799,6 @@
       renderAdminOrders(subTab);
     }
 
-    // Kullanıcı ürün arama
     window.searchProducts = function() {
       const query = document.getElementById('product-search').value.toLowerCase().trim();
       const container = document.getElementById('product-container');
@@ -842,7 +838,6 @@
       `).join('');
     }
 
-    // Admin ürün arama
     window.searchAdminProducts = function() {
       const query = document.getElementById('admin-product-search').value.toLowerCase().trim();
       const tbody = document.querySelector('#admin-product-table tbody');
@@ -998,6 +993,34 @@
       `;
     }
 
+    // WhatsApp bildirim fonksiyonu
+    window.sendWhatsAppNotification = function(orderData) {
+      const adminPhone = '905461840058'; // BU NUMARAYI DEĞİŞTİRİN: Kendi WhatsApp numaranız
+      
+      const message = `🛎️ *YENİ SİPARİŞ*\n\n` +
+        `📦 *Sipariş No:* ${orderData.code}\n` +
+        `👤 *Müşteri:* ${orderData.customerName}\n` +
+        `📞 *Telefon:* ${orderData.customerPhone}\n` +
+        `📍 *Adres:* ${orderData.customerAddress}\n\n` +
+        `🛒 *Ürünler:*\n`;
+      
+      orderData.items.forEach(item => {
+        message += `  • ${item.name} - ${item.quantity} adet (${item.price * item.quantity} TL)\n`;
+      });
+      
+      message += `\n💰 *Toplam:* ${orderData.total} TL\n`;
+      message += `💳 *Ödeme:* ${orderData.paymentMethod}\n`;
+      
+      if (orderData.note) {
+        message += `📝 *Not:* ${orderData.note}\n`;
+      }
+      
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodedMessage}`;
+      
+      window.open(whatsappUrl, '_blank');
+    }
+
     window.placeOrder = async function() {
       if (!window.currentUser || window.sepet.length === 0) return;
       const paymentMethod = document.getElementById('payment-method').value;
@@ -1039,6 +1062,10 @@
         }
         batch.set(doc(collection(db, "orders")), newOrder);
         await batch.commit();
+        
+        // WhatsApp bildirimi gönder
+        sendWhatsAppNotification(newOrder);
+        
         window.sepet = [];
         saveCart();
         updateCartCount();
