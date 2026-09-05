@@ -428,7 +428,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -445,18 +445,18 @@
     const auth = getAuth(app);
 
     const defaultProducts = [
-      { id: 1, name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
-      { id: 2, name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
-      { id: 3, name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
-      { id: 4, name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
-      { id: 5, name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
+      { name: 'Pro Plan Köpek Maması 3kg', category: 'Mama', price: 450, stock: 15, image: '' },
+      { name: 'Royal Canin Kedi Maması 2kg', category: 'Mama', price: 380, stock: 10, image: '' },
+      { name: 'Pro Line Bentonit Kedi Kumu 10L', category: 'Kum', price: 160, stock: 25, image: '' },
+      { name: 'Dayanıklı Köpek Tasması', category: 'Aksesuar', price: 220, stock: 30, image: '' },
+      { name: 'Kedi Tırmalama Tahtası', category: 'Aksesuar', price: 150, stock: 20, image: '' }
     ];
 
     const defaultCategories = [
-      { id: 'cat_1', name: 'Mama', image: '' },
-      { id: 'cat_2', name: 'Kum', image: '' },
-      { id: 'cat_3', name: 'Aksesuar', image: '' },
-      { id: 'cat_4', name: 'Bakım', image: '' }
+      { name: 'Mama', image: '' },
+      { name: 'Kum', image: '' },
+      { name: 'Aksesuar', image: '' },
+      { name: 'Bakım', image: '' }
     ];
 
     const PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjZjU5ZTBiIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+R29yc2VsIFlva3V0PC90ZXh0Pjwvc3ZnPg==';
@@ -518,22 +518,16 @@
     async function seedDefaults() {
       const pSnap = await getDocs(collection(db, "products"));
       if (pSnap.empty) {
-        const batch = writeBatch(db);
-        defaultProducts.forEach(p => {
-          const docRef = doc(db, "products", String(p.id));
-          batch.set(docRef, p);
-        });
-        await batch.commit();
+        for (const p of defaultProducts) {
+          await setDoc(doc(collection(db, "products")), p);
+        }
       }
 
       const cSnap = await getDocs(collection(db, "categories"));
       if (cSnap.empty) {
-        const batch = writeBatch(db);
-        defaultCategories.forEach(c => {
-          const docRef = doc(db, "categories", c.id);
-          batch.set(docRef, c);
-        });
-        await batch.commit();
+        for (const c of defaultCategories) {
+          await setDoc(doc(collection(db, "categories")), c);
+        }
       }
     }
 
@@ -980,7 +974,6 @@
       `;
     }
 
-    // WhatsApp bildirim fonksiyonu - doğrudan uygulama açılır
     window.sendWhatsAppNotification = function(orderData) {
       const adminPhone = '905461840058';
       
@@ -1069,7 +1062,7 @@
         showPage('order-success');
       } catch (err) {
         console.error("Sipariş hatası:", err);
-        alert('Sipariş oluşturulurken bir hata oluştu.');
+        alert('Sipariş oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
       }
     }
 
@@ -1293,7 +1286,7 @@
         if (window.editingProductId) { await updateDoc(doc(db, "products", window.editingProductId), productData); }
         else { await setDoc(doc(collection(db, "products")), productData); }
         cancelAddProduct();
-      } catch (err) { console.error("Ürün kaydedilemedi:", err); alert('Kayıt sırasında hata oluştu.'); }
+      } catch (err) { console.error("Ürün kaydedilemedi:", err); alert('Kayıt sırasında hata oluştu. Fotoğraf çok büyük olabilir.'); }
     }
 
     window.deleteProduct = async function(firestoreId) {
